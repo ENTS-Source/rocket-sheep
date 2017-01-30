@@ -1,16 +1,3 @@
-From f57f384bc875a5e405fcd267b7acb51375c4ce5a Mon Sep 17 00:00:00 2001
-From: turt2live <travpc@gmail.com>
-Date: Fri, 27 Jan 2017 22:33:18 -0700
-Subject: [PATCH] Upgrade base of NEB to 0.0.5 of matrix-python-sdk
-
----
- neb.py         |  1 -
- neb/engine.py  | 51 +++++++++++++++++++++++++++++++++++----------------
- neb/matrix.py  | 10 +++++++++-
- neb/plugins.py |  2 +-
- setup.py       |  2 +-
- 5 files changed, 46 insertions(+), 20 deletions(-)
-
 diff --git a/neb.py b/neb.py
 index c2ca930..7d005b4 100755
 --- a/neb.py
