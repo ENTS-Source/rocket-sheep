@@ -1,0 +1,184 @@
+From f57f384bc875a5e405fcd267b7acb51375c4ce5a Mon Sep 17 00:00:00 2001
+From: turt2live <travpc@gmail.com>
+Date: Fri, 27 Jan 2017 22:33:18 -0700
+Subject: [PATCH] Upgrade base of NEB to 0.0.5 of matrix-python-sdk
+
+---
+ neb.py         |  1 -
+ neb/engine.py  | 51 +++++++++++++++++++++++++++++++++++----------------
+ neb/matrix.py  | 10 +++++++++-
+ neb/plugins.py |  2 +-
+ setup.py       |  2 +-
+ 5 files changed, 46 insertions(+), 20 deletions(-)
+
+diff --git a/neb.py b/neb.py
+index c2ca930..7d005b4 100755
+--- a/neb.py
++++ b/neb.py
+@@ -127,7 +127,6 @@ def main(config):
+             hsurl = raw_input("Home server URL (e.g. http://localhost:8008): ").strip()
+             if hsurl.endswith("/"):
+                 hsurl = hsurl[:-1]
+-            hsurl = hsurl + "/_matrix/client/api/v1"  # v1 compatibility
+             username = raw_input("Full user ID (e.g. @user:domain): ").strip()
+             token = raw_input("Access token: ").strip()
+             config = generate_config(hsurl, username, token, args.config)
+diff --git a/neb/engine.py b/neb/engine.py
+index 5be8e4c..454f21f 100755
+--- a/neb/engine.py
++++ b/neb/engine.py
+@@ -17,6 +17,7 @@ def __init__(self, matrix_api, config):
+         self.plugins = {}
+         self.config = config
+         self.matrix = matrix_api
++        self.sync_token = None  # set later by initial sync
+ 
+     def setup(self):
+         self.webhook = NebHookServer(8500)
+@@ -31,7 +32,8 @@ def setup(self):
+                 self.webhook
+             )
+ 
+-        sync = self.matrix.initial_sync()
++        sync = self.matrix.sync(timeout_ms=30000, since=self.sync_token)
++        self.parse_sync(sync, initial_sync=True)
+         log.debug("Notifying plugins of initial sync results")
+         for plugin_name in self.plugins:
+             plugin = self.plugins[plugin_name]
+@@ -58,7 +60,7 @@ def parse_membership(self, event):
+         log.info("Parsing membership: %s", event)
+         if (event["state_key"] == self.config.user_id
+                 and event["content"]["membership"] == "invite"):
+-            user_id = event["user_id"]
++            user_id = event["sender"]
+             if user_id in self.config.admins:
+                 self.matrix.join_room(event["room_id"])
+             else:
+@@ -69,11 +71,11 @@ def parse_membership(self, event):
+ 
+     def parse_msg(self, event):
+         body = event["content"]["body"]
+-        if (event["user_id"] == self.config.user_id or 
++        if (event["sender"] == self.config.user_id or
+                 event["content"]["msgtype"] == "m.notice"):
+             return
+         if body.startswith(Engine.PREFIX):
+-            room = event["room_id"]
++            room = event["room_id"]  # room_id added by us
+             try:
+                 segments = body.split()
+                 cmd = segments[0][1:]
+@@ -168,14 +170,33 @@ def event_proc(self, event):
+             log.error("Couldn't process event: %s", e)
+ 
+     def event_loop(self):
+-        end = "END"
+         while True:
+-            j = self.matrix.event_stream(timeout=30000, from_token=end)
+-            end = j["end"]
+-            events = j["chunk"]
+-            log.debug("Received: %s", events)
+-            for event in events:
+-                self.event_proc(event)
++            j = self.matrix.sync(timeout_ms=30000, since=self.sync_token)
++            self.parse_sync(j)
++
++    def parse_sync(self, sync_result, initial_sync=False):
++        self.sync_token = sync_result["next_batch"]  # for when we start syncing
++
++        # check invited rooms
++        rooms = sync_result["rooms"]["invite"]
++        for room_id in rooms:
++            events = rooms[room_id]["invite_state"]["events"]
++            self.process_events(events, room_id)
++
++        # return early if we're performing an initial sync (ie: don't parse joined rooms, just drop the state)
++        if initial_sync:
++            return
++
++        # check joined rooms
++        rooms = sync_result["rooms"]["join"]
++        for room_id in rooms:
++            events = rooms[room_id]["timeline"]["events"]
++            self.process_events(events, room_id)
++
++    def process_events(self, events, room_id):
++        for event in events:
++            event["room_id"] = room_id
++            self.event_proc(event)
+ 
+ 
+ class RoomContextStore(object):
+@@ -219,16 +240,14 @@ def update(self, event):
+             pass
+ 
+     def init_from_sync(self, sync):
+-        for room in sync["rooms"]:
++        for room_id in sync["rooms"]["join"]:
+             # see if we know anything about these rooms
+-            room_id = room["room_id"]
+-            if room["membership"] != "join":
+-                continue
++            room = sync["rooms"]["join"][room_id]
+ 
+             self.state[room_id] = {}
+ 
+             try:
+-                for state in room["state"]:
++                for state in room["state"]["events"]:
+                     if state["type"] in self.types:
+                         key = (state["type"], state["state_key"])
+ 
+diff --git a/neb/matrix.py b/neb/matrix.py
+index 21e6647..61b9d10 100755
+--- a/neb/matrix.py
++++ b/neb/matrix.py
+@@ -1,5 +1,6 @@
+ #!/usr/bin/env python
+ import json
++import logging as log
+ 
+ 
+ class MatrixConfig(object):
+@@ -26,8 +27,15 @@ def to_file(cls, config, f):
+     @classmethod
+     def from_file(cls, f):
+         j = json.load(f)
++
++        # convert old 0.0.1 matrix-python-sdk urls to 0.0.3+
++        hs_url = j[MatrixConfig.URL]
++        if hs_url.endswith("/_matrix/client/api/v1"):
++            hs_url = hs_url[:-22]
++            log.info("Detected legacy URL, using '%s' instead. Consider changing this in your configuration." % hs_url)
++
+         return MatrixConfig(
+-            hs_url=j[MatrixConfig.URL],
++            hs_url=hs_url,
+             user_id=j[MatrixConfig.USR],
+             access_token=j[MatrixConfig.TOK],
+             admins=j[MatrixConfig.ADM]
+diff --git a/neb/plugins.py b/neb/plugins.py
+index 05dd886..a84d6c8 100644
+--- a/neb/plugins.py
++++ b/neb/plugins.py
+@@ -20,7 +20,7 @@ def admin_only(fn):
+     def wrapped(*args, **kwargs):
+         config = args[0].config
+         event = args[1]
+-        if event["user_id"] not in config.admins:
++        if event["sender"] not in config.admins:
+             return "Sorry, only %s can do that." % json.dumps(config.admins)
+         result = fn(*args, **kwargs)
+         return result
+diff --git a/setup.py b/setup.py
+index e7ab024..6b1812e 100644
+--- a/setup.py
++++ b/setup.py
+@@ -16,6 +16,6 @@
+         "python-dateutil"
+     ],
+     dependency_links=[
+-        "https://github.com/matrix-org/matrix-python-sdk/tarball/v0.0.1#egg=matrix_client-0.0.1"
++        "https://github.com/matrix-org/matrix-python-sdk/tarball/v0.0.5#egg=matrix_client-0.0.5"
+     ]
+ )

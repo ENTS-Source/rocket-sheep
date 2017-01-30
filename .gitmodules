@@ -1,0 +1,3 @@
+[submodule "Matrix-NEB"]
+	path = Matrix-NEB
+	url = https://github.com/matrix-org/Matrix-NEB
