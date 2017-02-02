@@ -71,7 +71,6 @@ class CameraCheckPlugin(Plugin):
         result = requests.get(url, auth=HTTPBasicAuth(apiInfo["username"], apiInfo["password"]), stream=True)
         capture = Image.open(io.BytesIO(result.content))
         response = self.matrix.media_upload(result.content, "image/jpeg")
-        log.debug(response)
         if "content_uri" in response:
             return {
                 "msgtype": "m.image",
