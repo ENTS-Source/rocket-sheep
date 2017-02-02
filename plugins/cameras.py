@@ -1,10 +1,11 @@
 from neb.plugins import Plugin
 from neb.engine import KeyValueStore
 from requests.auth import HTTPBasicAuth
-from io import StringIO
+from PIL import Image
 
 import logging as log
 import requests
+import io
 
 
 class CameraCheckPlugin(Plugin):
@@ -65,8 +66,9 @@ class CameraCheckPlugin(Plugin):
         apiInfo = self.store.get("api")
         url = apiInfo["base_url"] + "/image/" + shortcode + "?q=40"
         result = requests.get(url, auth=HTTPBasicAuth(apiInfo["username"], apiInfo["password"]), stream=True)
-        #capture = Image.open(StringIO(result.content))
+        capture = Image.open(io.BytesIO(result.content))
         response = self.matrix.media_upload(result.content, "image/jpeg")
+        log.debug(response)
         if "content_uri" in response:
             return {
                 "msgtype": "m.image",
@@ -74,7 +76,9 @@ class CameraCheckPlugin(Plugin):
                 "body": shortcode + ".jpg",
                 "info": {
                     "mimetype": "image/jpeg",
-                    "size": len(result.content)
+                    "size": len(result.content),
+                    "w": capture.width,
+                    "h": capture.height
                 }
             }
         else:
