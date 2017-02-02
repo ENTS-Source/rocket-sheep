@@ -42,7 +42,10 @@ class CameraCheckPlugin(Plugin):
         for shortcode in self.store.get("cameras").keys():
             camera = self.store.get("cameras")[shortcode]
             results.append(camera["name"] + ": " + camera["description"])
-        return results
+        result_str = ""
+        for line in results:
+            result_str += line + "\n";
+        return result_str
 
     def cmd_show(self, event, *args):
         """Gets the current camera image. 'camera show <name>'"""
