@@ -20,7 +20,7 @@ class PingPlugin(Plugin):
 
     def cmd_space(self, event, *args):
         """Pings the space to let people know to check the chat. 'ping space'"""
-        response = requests.get(self.store.get('url'))
+        response = requests.get(self.store.get('url'), timeout=5)
         if response.text == "played":
             return "Space pinged"
         else:
