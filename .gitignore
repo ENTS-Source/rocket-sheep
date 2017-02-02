@@ -2,3 +2,4 @@
 .tmp/
 .bot/
 env/
+*.json

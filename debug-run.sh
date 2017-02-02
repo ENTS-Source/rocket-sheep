@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ./jenkins.sh
-cp .bot/*.json .tmp/
+cp *.json .tmp/
 rm -rf .bot
 mv .tmp .bot
 cd .bot
