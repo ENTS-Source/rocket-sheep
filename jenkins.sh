@@ -14,3 +14,4 @@ cd ../
 
 # copy over our plugins
 cp -r plugins .tmp
+cp requirements.txt .tmp/requirements.txt
