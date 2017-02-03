@@ -12,6 +12,7 @@ class CameraCheckPlugin(Plugin):
     """Replies with information about the cameras at ENTS
     camera list : Lists the available cameras
     camera show <name> : Captures the current image from the given camera
+    camera tour : Displays an image from each of the cameras
     """
 
     name="camera"
@@ -46,6 +47,15 @@ class CameraCheckPlugin(Plugin):
         for line in results:
             result_str += line + "\n";
         return result_str
+    
+    def cmd_tour(self, event, *args):
+        """Displays the current camera image from each camera. 'camera tour'"""
+        results = [];
+        for shortcode in self.store.get("cameras").keys():
+            results.append(get_image(shortcode))
+        for line in results:
+            result_str += line + "\n";
+        return result_str;
 
     def cmd_show(self, event, *args):
         """Gets the current camera image. 'camera show <name>'"""
