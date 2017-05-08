@@ -33,7 +33,7 @@ class DoorLogPlugin(Plugin):
             self.store.set("rooms", [])
 
         if not self.store.has("timeout"):
-            self.store.set("timeout", 15) # seconds
+            self.store.set("timeout", 120) # seconds
 
         amqpUrl = "amqp://" + self.store.get('mq')['username'] + ":" + self.store.get('mq')['password'] + "@" + self.store.get('mq')["hostname"] + ":" + str(self.store.get("mq")["port"])
         self._consumer = MqConsumer(self.store.get('mq')['recv_queue'], amqpUrl, self._handle_message)
