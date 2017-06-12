@@ -1,2 +1,11 @@
 # rocket-sheep
-A bot running on tang.ents.ca to help with member actions: @sheep:tang.ents.ca. Based on https://github.com/matrix-org/Matrix-NEB
+
+A bot running on tang.ents.ca to help with member actions: `@sheep:tang.ents.ca`. Currently supports querying cameras at ENTS and announcing when people arrive.
+
+# Running
+
+* Clone this repository
+* Run `npm install` in the cloned directory
+* Copy `config/default.yaml` to `config/production.yaml` and change any settings.
+* Run `NODE_ENV=production npm run build`
+* Run `NODE_ENV=production npm run start`

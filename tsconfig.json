@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "ES6",
+    "noImplicitAny": false,
+    "sourceMap": false,
+    "outDir": "./build",
+    "types": ["node"]
+  },
+  "compileOnSave": true,
+  "include": [
+    "src/**/*"
+  ]
+}
