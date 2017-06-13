@@ -7,7 +7,7 @@ import * as config from "config";
  */
 export class CommandHandler {
 
-    private static prefixMap: {[prefix: string]: CommandHandlerFn} = {};
+    private static prefixMap: {[prefix: string]: {handler: CommandHandlerFn, helpText: string}} = {};
 
     /**
      * Creates a new command handler
@@ -30,11 +30,18 @@ export class CommandHandler {
         let keys = _.keys(CommandHandler.prefixMap);
         let message = event.getContent().body.trim();
         LogService.verbose("CommandHandler", "Processing command " + message);
+
+        if (message.toLowerCase() === "!help") {
+            LogService.verbose("CommandHandler", "Intercepting help command for room " + event.getRoomId());
+            this.sendHelp(event.getRoomId());
+            return;
+        }
+
         for (let key of keys) {
             if (message.toLowerCase().startsWith(key.toLowerCase())) {
                 LogService.verbose("CommandHandler", "Command matches prefix '" + key + "': " + message);
                 let args = message.substring(key.length).trim().split(' ');
-                CommandHandler.prefixMap[key](key, args, event.getRoomId(), event.getSender(), this.matrixClient);
+                CommandHandler.prefixMap[key].handler(key, args, event.getRoomId(), event.getSender(), this.matrixClient);
             }
         }
         LogService.verbose("CommandHandler", "Done processing command " + message);
@@ -44,10 +51,11 @@ export class CommandHandler {
      * Registers a command with the handler
      * @param prefix the prefix to use. Eg: "!camera list"
      * @param handler the handler for the command
+     * @param helpText the text to show in the help menu
      */
-    public static registerCommand(prefix: string, handler: CommandHandlerFn): void {
+    public static registerCommand(prefix: string, handler: CommandHandlerFn, helpText: string): void {
         LogService.info("CommandHandler", "Registered command prefix " + prefix);
-        CommandHandler.prefixMap[prefix] = handler;
+        CommandHandler.prefixMap[prefix] = {handler: handler, helpText: helpText};
     }
 
     private isPublicRoom(roomId: string): boolean {
@@ -60,6 +68,14 @@ export class CommandHandler {
 
     private canRunCommand(sender: string, roomId: string): boolean {
         return this.isAdmin(sender) || this.isPublicRoom(roomId);
+    }
+
+    private sendHelp(roomId: string): void {
+        let message = "Commands:\n";
+        for (let key in CommandHandler.prefixMap) {
+            message += CommandHandler.prefixMap[key].helpText + "\n";
+        }
+        this.matrixClient.sendNotice(roomId, message);
     }
 }
 

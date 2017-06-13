@@ -1,7 +1,7 @@
 import * as config from "config";
 import { Plugin } from "./Plugin";
-import { DoorPlugin } from "./doors/DoorPlugin";
-import { CameraPlugin } from "./cameras/CameraPlugin";
+import { DoorPlugin } from "./impl/DoorPlugin";
+import { CameraPlugin } from "./impl/CameraPlugin";
 import { LogService } from "../util/LogService";
 
 /**
