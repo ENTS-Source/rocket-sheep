@@ -20,8 +20,8 @@ export class CameraPlugin implements Plugin {
 
     public init(matrixClient): void {
         LogService.info("CameraPlugin", "Registering command handler");
-        CommandHandler.registerCommand("!camera list", this.cameraListCommand.bind(this));
-        CommandHandler.registerCommand("!camera show", this.cameraShowCommand.bind(this));
+        CommandHandler.registerCommand("!camera list", this.cameraListCommand.bind(this), "!camera list - Lists all available cameras");
+        CommandHandler.registerCommand("!camera show", this.cameraShowCommand.bind(this), "!camera show <camera> - Gets an image from the camera given");
     }
 
     private cameraListCommand(cmd: string, args: string[], roomId: string, sender: string, matrixClient: any): void {

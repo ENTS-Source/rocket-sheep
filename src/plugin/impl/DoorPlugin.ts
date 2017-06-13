@@ -27,7 +27,7 @@ export class DoorPlugin implements Plugin {
         this.matrixClient = matrixClient;
 
         LogService.info("DoorPlugin", "Registering command handler");
-        CommandHandler.registerCommand("!door last", this.doorLastCommand.bind(this));
+        CommandHandler.registerCommand("!door last", this.doorLastCommand.bind(this), "!door last [number] - Gets the most recent [number] entries to the space.");
 
         LogService.info("DoorPlugin", "Connecting to message queue");
         this.connectMq();
