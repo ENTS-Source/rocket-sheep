@@ -1,9 +1,9 @@
 import { Plugin } from "../Plugin";
 import { LogService } from "../../util/LogService";
+//noinspection TypeScriptCheckImport
 import * as amqp from "amqplib/callback_api";
 import { CommandHandler } from "../../matrix/CommandHandler";
-import * as _ from 'lodash';
-//noinspection TypeScriptCheckImport
+import * as _ from "lodash";
 import moment = require("moment");
 
 /**
@@ -50,7 +50,7 @@ export class DoorPlugin implements Plugin {
             records.push(this.enterRecords[this.enterRecords.length - i - 1]);
         }
 
-        let messsage = (records.length > 1 ? "Showing " + numRecent + " most recent entries:\n": "") + records.map(r => r.displayName + "     " + r.time.fromNow()).join("\n");
+        let messsage = (records.length > 1 ? "Showing " + numRecent + " most recent entries:\n" : "") + records.map(r => r.displayName + "     " + r.time.fromNow()).join("\n");
         matrixClient.sendNotice(roomId, messsage);
     }
 
