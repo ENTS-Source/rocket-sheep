@@ -1,6 +1,9 @@
 import { Plugin } from "../Plugin";
 import { LogService } from "../../util/LogService";
 import * as amqp from "amqplib/callback_api";
+import { CommandHandler } from "../../matrix/CommandHandler";
+import * as _ from 'lodash';
+//noinspection TypeScriptCheckImport
 import moment = require("moment");
 
 /**
@@ -24,8 +27,31 @@ export class DoorPlugin implements Plugin {
         this.matrixClient = matrixClient;
 
         LogService.info("DoorPlugin", "Registering command handler");
+        CommandHandler.registerCommand("!door last", this.doorLastCommand.bind(this));
+
         LogService.info("DoorPlugin", "Connecting to message queue");
         this.connectMq();
+    }
+
+    private doorLastCommand(cmd: string, args: string[], roomId: string, sender: string, matrixClient: any): void {
+        let numRecent = args.length > 0 ? Number(args[0]) : 1;
+        if (_.isNaN(numRecent)) numRecent = 1;
+        LogService.verbose("DoorPlugin", "Last " + numRecent + " unlocks requested of " + this.enterRecords.length + " available in room " + roomId);
+        if (this.enterRecords.length === 0) {
+            matrixClient.sendNotice(roomId, "No recent entries.");
+            return;
+        }
+
+        numRecent = Math.max(1, Math.min(numRecent, this.enterRecords.length));
+        LogService.verbose("DoorPlugin", "Displaying " + numRecent + " most recent unlocks to room " + roomId);
+
+        let records = [];
+        for (let i = 0; i < numRecent; i++) {
+            records.push(this.enterRecords[this.enterRecords.length - i - 1]);
+        }
+
+        let messsage = (records.length > 1 ? "Showing " + numRecent + " most recent entries:\n": "") + records.map(r => r.displayName + "     " + r.time.fromNow()).join("\n");
+        matrixClient.sendNotice(roomId, messsage);
     }
 
     private rotateMemory(): void {
