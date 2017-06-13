@@ -38,6 +38,16 @@ export class CameraPlugin implements Plugin {
                 shortcode = mapping.id;
                 break;
             }
+
+            // Check camera aliases too
+            for (let alias of mapping.aliases) {
+                if (alias.toLowerCase() === args[0].toLowerCase()) {
+                    shortcode = mapping.id;
+                    break;
+                }
+            }
+
+            if (shortcode) break;
         }
 
         if (!shortcode) {
