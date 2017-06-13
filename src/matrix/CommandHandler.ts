@@ -26,7 +26,7 @@ export class CommandHandler {
         let message = event.getContent().body.trim();
         LogService.verbose("CommandHandler", "Processing command " + message);
 
-        if (message.toLowerCase() === "!help") {
+        if (message.toLowerCase() === "!help" && keys.length > 0) {
             LogService.verbose("CommandHandler", "Intercepting help command for room " + event.getRoomId());
             this.sendHelp(event.getRoomId());
             return;
