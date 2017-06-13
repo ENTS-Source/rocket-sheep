@@ -4,9 +4,19 @@ matrix:
   token: "your_token_here"
   username: "@sheep:tang.ents.ca"
 
-# Admins for the bot. These people have the capability to invite the bot to rooms and perform other admin functions.
+# Admins for the bot. These people can use the functions of the bot anywhere.
 admins:
   - "@archive:tang.ents.ca"
+
+# These are the rooms where the bot may be used publicly.
+public_rooms:
+  - "!zxWLnBMJtBomyQlnRV:tang.ents.ca" # ents
+  - "!OcbjXnxIEtLlATsYai:tang.ents.ca" # alerts
+  - "!FejsahFlUXZoOCmXED:tang.ents.ca" # spam
+  - "!vEVQkbTodeNjQFMLos:tang.ents.ca" # metalshop
+  - "!MMLUczZfjXGoZlwVot:tang.ents.ca" # pottery
+  - "!UssDaqScmKWCvFxVek:tang.ents.ca" # rc
+  - "!XbaqdTBYgSDdaXZpBE:tang.ents.ca" # 3d printing
 
 # Door plugin settings
 doors:
@@ -71,3 +81,13 @@ cameras:
   - id: "POTTERY2"
     description: "The pottery workbenches (work in progress)"
     aliases: ["potteryworkbenches"]
+
+# Settings for controlling how logging works
+logging:
+  file: logs/rocketsheep.log
+  console: true
+  consoleLevel: info
+  fileLevel: verbose
+  rotate:
+    size: 52428800 # bytes, default is 50mb
+    count: 5

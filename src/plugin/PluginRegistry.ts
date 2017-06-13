@@ -9,7 +9,7 @@ import { LogService } from "../util/LogService";
  */
 export class PluginRegistry {
 
-    private plugins: Plugin[];
+    private plugins: Plugin[] = [];
 
     /**
      * Creates a new plugin registry. This will cause a scan for plugins and run their pre-init routines.
