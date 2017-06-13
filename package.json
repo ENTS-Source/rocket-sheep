@@ -1,0 +1,40 @@
+{
+  "name": "rocket-sheep",
+  "version": "2.0.0",
+  "description": "A Matrix bot running on tang.ents.ca",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ENTS-Source/rocket-sheep.git"
+  },
+  "authors": [
+    "Travis Ralston",
+    "ENTS"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node ./build/src/sheep.js",
+    "dev": "npm run build && npm run start"
+  },
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/ENTS-Source/rocket-sheep/issues"
+  },
+  "homepage": "https://github.com/ENTS-Source/rocket-sheep#readme",
+  "dependencies": {
+    "@types/lodash": "^4.14.66",
+    "@types/node": "^7.0.29",
+    "@types/request": "0.0.43",
+    "amqplib": "^0.5.1",
+    "chalk": "^1.1.3",
+    "config": "^1.26.1",
+    "jpeg-js": "^0.2.0",
+    "js-yaml": "^3.8.4",
+    "lodash": "^4.17.4",
+    "matrix-js-sdk": "^0.7.11-rc.1",
+    "moment": "^2.18.1",
+    "request": "^2.81.0",
+    "tslint": "^5.4.3",
+    "typescript": "^2.3.4",
+    "winston": "^2.3.1"
+  }
+}

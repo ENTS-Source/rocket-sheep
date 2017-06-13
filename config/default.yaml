@@ -1,0 +1,93 @@
+# The matrix settings for the bot
+matrix:
+  homeserver: "https://tang.ents.ca"
+  token: "your_token_here"
+  username: "@sheep:tang.ents.ca"
+
+# Admins for the bot. These people can use the functions of the bot anywhere.
+admins:
+  - "@archive:tang.ents.ca"
+
+# These are the rooms where the bot may be used publicly.
+public_rooms:
+  - "!zxWLnBMJtBomyQlnRV:tang.ents.ca" # ents
+  - "!OcbjXnxIEtLlATsYai:tang.ents.ca" # alerts
+  - "!FejsahFlUXZoOCmXED:tang.ents.ca" # spam
+  - "!vEVQkbTodeNjQFMLos:tang.ents.ca" # metalshop
+  - "!MMLUczZfjXGoZlwVot:tang.ents.ca" # pottery
+  - "!UssDaqScmKWCvFxVek:tang.ents.ca" # rc
+  - "!XbaqdTBYgSDdaXZpBE:tang.ents.ca" # 3d printing
+
+# Door plugin settings
+doors:
+  enabled: true
+  announce_rooms: ["!zxWLnBMJtBomyQlnRV:tang.ents.ca"]
+  # Number of seconds to suppress announcements for the same person after an announcement
+  announce_timeout: 300
+  # Maximum number of results allowed in a door query. Zero or negative mean infinite
+  max_results: 10
+  # Message queue settings (RabbitMQ)
+  mq:
+    username: username_here
+    password: password_here
+    hostname: somewhere.com
+    port: 5672
+    queue: "ents-door-announce-rsheep"
+
+# Camera plugin settings
+cameras:
+  enabled: true
+  # Blue Iris web settings
+  api:
+    username: your_username_here
+    password: your_password_here
+    base_url: http://somewhere.com
+  # Camera mappings. Default are all of the cameras available at ENTS. ID and Aliases are case insensitive, but the ID must
+  # match the ID in Blue Iris exactly.
+  mappings:
+  - id: "index"
+    description: "A grid of all available cameras"
+    aliases: ["all", "allcameras", "space", "ents"]
+  - id: "MAINROOM"
+    description: "The general work area"
+    aliases: ["workspace"]
+  - id: "ELECTRONICS"
+    description: "The electronics/3D printing area"
+    aliases: ["3dprinters", "3dprinting"]
+  - id: "woodshop"
+    description: "Both woodshop cameras"
+    aliases: ["wholewoodshop"]
+  - id: "WOODSHOP1"
+    description: "The first half of the woodshop (table saw, offcuts, etc)"
+    aliases: ["tablesaw", "woodoffcuts"]
+  - id: "WOODSHOP2"
+    description: "The second half of the woodshop (chop saw, entrance)"
+    aliases: ["chopsaw", "woodshopchopsaw", "woodsaw"]
+  - id: "metalshop"
+    description: "Both metalshop cameras"
+    aliases: ["wholemetalshop"]
+  - id: "METALSHOP1"
+    description: "The first half of the metalshop (lathes, entrance)"
+    aliases: ["lathes", "lathe", "metallathe"]
+  - id: "METALSHOP2"
+    description: "The second half of the metalshop (mills, work tables, etc)"
+    aliases: ["metalmill", "mills", "metalmills", "metalshoptables"]
+  - id: "pottery"
+    description: "Both pottery cameras"
+    aliases: ["wholepottery"]
+  - id: "POTTERY1"
+    description: "The pottery wheels"
+    aliases: ["wheels", "potterywheels"]
+  - id: "POTTERY2"
+    description: "The pottery workbenches (work in progress)"
+    aliases: ["potteryworkbenches"]
+
+# Settings for controlling how logging works
+logging:
+  file: logs/rocketsheep.log
+  console: true
+  consoleLevel: info
+  fileLevel: verbose
+  rotate:
+    size: 52428800 # bytes, default is 50mb
+    count: 5
