@@ -22,11 +22,6 @@ export class CommandHandler {
      * @param event the event to process
      */
     public process(event): void {
-        if (!this.canRunCommand(event.getSender(), event.getRoomId())) {
-            this.matrixClient.sendNotice(event.getRoomId(), "Sorry, you don't have permission to use that command here.");
-            return;
-        }
-
         let keys = _.keys(CommandHandler.prefixMap);
         let message = event.getContent().body.trim();
         LogService.verbose("CommandHandler", "Processing command " + message);
@@ -40,6 +35,13 @@ export class CommandHandler {
         for (let key of keys) {
             if (message.toLowerCase().startsWith(key.toLowerCase())) {
                 LogService.verbose("CommandHandler", "Command matches prefix '" + key + "': " + message);
+                
+                if (!this.canRunCommand(event.getSender(), event.getRoomId())) {
+                    LogService.verbose("CommandHandler", "Denying " + event.getSender() + " in room " + event.getRoomId() + " from using command " + message);
+                    this.matrixClient.sendNotice(event.getRoomId(), "Sorry, you don't have permission to use that command here.");
+                    return;
+                }
+                
                 let args = message.substring(key.length).trim().split(' ');
                 CommandHandler.prefixMap[key].handler(key, args, event.getRoomId(), event.getSender(), this.matrixClient);
             }
