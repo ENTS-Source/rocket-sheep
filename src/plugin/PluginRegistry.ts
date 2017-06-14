@@ -3,6 +3,7 @@ import { Plugin } from "./Plugin";
 import { DoorPlugin } from "./impl/DoorPlugin";
 import { CameraPlugin } from "./impl/CameraPlugin";
 import { LogService } from "../util/LogService";
+import { DirectorsPlugin } from "./impl/DirectorsPlugin";
 
 /**
  * Holds information about the various enabled plugins
@@ -22,6 +23,10 @@ export class PluginRegistry {
         if (config["cameras"]["enabled"]) {
             LogService.info("PluginRegistry", "Adding enabled plugin 'cameras' to plugin list.");
             this.plugins.push(new CameraPlugin(config["cameras"]));
+        }
+        if (config["directors"]["enabled"]) {
+            LogService.info("PluginRegistry", "Adding enabled plugin 'directors' to plugin list.");
+            this.plugins.push(new DirectorsPlugin(config["directors"]));
         }
 
         LogService.info("PluginRegistry", "Found " + this.plugins.length + " enabled plugins");

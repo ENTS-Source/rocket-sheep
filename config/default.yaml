@@ -34,6 +34,13 @@ doors:
     port: 5672
     queue: "ents-door-announce-rsheep"
 
+# Directors plugin settings
+directors:
+  enabled: true
+  directors:
+  - "Travis (@travis:t2l.io)"
+  contact_email: "directors@ents.ca"
+
 # Camera plugin settings
 cameras:
   enabled: true
