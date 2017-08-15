@@ -30,7 +30,7 @@
     "jpeg-js": "^0.3.2",
     "js-yaml": "^3.8.4",
     "lodash": "^4.17.4",
-    "matrix-js-sdk": "^0.7.11-rc.1",
+    "matrix-js-sdk": "^0.8.0",
     "moment": "^2.18.1",
     "request": "^2.81.0",
     "tslint": "^5.4.3",
