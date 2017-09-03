@@ -23,7 +23,7 @@
   "dependencies": {
     "@types/lodash": "^4.14.66",
     "@types/node": "^8.0.0",
-    "@types/request": "0.0.45",
+    "@types/request": "2.0.0",
     "amqplib": "^0.5.1",
     "chalk": "^2.0.0",
     "config": "^1.26.1",
