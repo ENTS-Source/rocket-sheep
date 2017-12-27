@@ -1,5 +1,5 @@
 import { Plugin } from "../Plugin";
-import { LogService } from "../../util/LogService";
+import { LogService } from "matrix-js-snippets";
 //noinspection TypeScriptCheckImport
 import * as amqp from "amqplib/callback_api";
 import { CommandHandler } from "../../matrix/CommandHandler";
@@ -116,7 +116,7 @@ export class DoorPlugin implements Plugin {
                 }, {noAck: true});
             });
 
-            conn.on('close', ()=> {
+            conn.on('close', () => {
                 LogService.warn("DoorPlugin", "MQ lost connection - reconnecting");
                 this.connectMq();
             })

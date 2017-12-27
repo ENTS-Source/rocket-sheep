@@ -1,5 +1,5 @@
 import { Plugin } from "../Plugin";
-import { LogService } from "../../util/LogService";
+import { LogService } from "matrix-js-snippets";
 import { CommandHandler } from "../../matrix/CommandHandler";
 import * as jpeg from "jpeg-js";
 import request = require("request");
@@ -91,8 +91,8 @@ export class CameraPlugin implements Plugin {
         });
     }
 
-    private getImage(shortcode: string): Promise<{width: number, height: number,data: Buffer}> {
-        return new Promise((resolve, reject)=> {
+    private getImage(shortcode: string): Promise<{ width: number, height: number, data: Buffer }> {
+        return new Promise((resolve, reject) => {
             request.get(this.config.api.base_url + "/image/" + shortcode, {
                 qs: {q: 40},
                 auth: {

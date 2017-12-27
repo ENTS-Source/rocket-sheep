@@ -1,8 +1,8 @@
-import { LogService } from "./util/LogService";
 import { PluginRegistry } from "./plugin/PluginRegistry";
 import { CommandHandler } from "./matrix/CommandHandler";
 import * as sdk from "matrix-js-sdk";
 import * as config from "config";
+import { LogService } from "matrix-js-snippets";
 
 LogService.info("sheep", "Starting up...");
 

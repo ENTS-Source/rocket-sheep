@@ -2,7 +2,7 @@ import * as config from "config";
 import { Plugin } from "./Plugin";
 import { DoorPlugin } from "./impl/DoorPlugin";
 import { CameraPlugin } from "./impl/CameraPlugin";
-import { LogService } from "../util/LogService";
+import { LogService } from "matrix-js-snippets";
 import { DirectorsPlugin } from "./impl/DirectorsPlugin";
 
 /**

@@ -21,20 +21,19 @@
   },
   "homepage": "https://github.com/ENTS-Source/rocket-sheep#readme",
   "dependencies": {
-    "@types/lodash": "^4.14.66",
-    "@types/node": "^8.0.0",
-    "@types/request": "0.0.45",
-    "amqplib": "^0.5.1",
-    "chalk": "^2.0.0",
-    "config": "^1.26.1",
-    "jpeg-js": "^0.3.2",
-    "js-yaml": "^3.8.4",
+    "@types/lodash": "^4.14.91",
+    "@types/node": "^8.5.2",
+    "@types/request": "^2.0.9",
+    "amqplib": "^0.5.2",
+    "config": "^1.29.0",
+    "jpeg-js": "^0.3.3",
+    "js-yaml": "^3.10.0",
     "lodash": "^4.17.4",
-    "matrix-js-sdk": "^0.7.11-rc.1",
-    "moment": "^2.18.1",
-    "request": "^2.81.0",
-    "tslint": "^5.4.3",
-    "typescript": "^2.3.4",
-    "winston": "^2.3.1"
+    "matrix-js-sdk": "^0.9.2",
+    "matrix-js-snippets": "^0.2.5",
+    "moment": "^2.20.1",
+    "request": "^2.83.0",
+    "tslint": "^5.8.0",
+    "typescript": "^2.6.2"
   }
 }

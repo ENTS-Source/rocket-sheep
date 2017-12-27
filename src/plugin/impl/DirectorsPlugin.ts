@@ -1,5 +1,5 @@
 import { Plugin } from "../Plugin";
-import { LogService } from "../../util/LogService";
+import { LogService } from "matrix-js-snippets";
 import { CommandHandler } from "../../matrix/CommandHandler";
 
 /**
