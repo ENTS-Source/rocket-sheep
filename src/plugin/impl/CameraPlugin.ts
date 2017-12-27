@@ -15,7 +15,6 @@ export class CameraPlugin implements Plugin {
      * @param config the config to use
      */
     constructor(private config: CameraConfig) {
-
     }
 
     public init(matrixClient): void {

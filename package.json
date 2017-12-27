@@ -12,8 +12,9 @@
   ],
   "scripts": {
     "build": "tsc",
-    "start": "node ./build/src/sheep.js",
-    "dev": "npm run build && npm run start"
+    "start": "node ./build/sheep.js",
+    "dev": "npm run build && npm run start",
+    "hw:generate_auth_url": "npm run build && node ./build/scripts/generate_auth_url.js"
   },
   "license": "GPL-3.0",
   "bugs": {
@@ -25,15 +26,24 @@
     "@types/node": "^8.5.2",
     "@types/request": "^2.0.9",
     "amqplib": "^0.5.2",
+    "bluebird": "^3.5.1",
     "config": "^1.29.0",
+    "express": "^4.16.2",
     "jpeg-js": "^0.3.3",
     "js-yaml": "^3.10.0",
     "lodash": "^4.17.4",
     "matrix-js-sdk": "^0.9.2",
     "matrix-js-snippets": "^0.2.5",
     "moment": "^2.20.1",
+    "reflect-metadata": "^0.1.10",
     "request": "^2.83.0",
+    "sequelize": "^4.28.6",
+    "sequelize-typescript": "^0.6.2",
+    "sqlite3": "^3.1.13",
+    "striptags": "^3.1.1",
     "tslint": "^5.8.0",
-    "typescript": "^2.6.2"
+    "typescript": "^2.6.2",
+    "typescript-rest": "^1.2.1",
+    "umzug": "^2.1.0"
   }
 }

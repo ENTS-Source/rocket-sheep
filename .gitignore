@@ -5,6 +5,7 @@ build/*
 db/*.db
 db/*.db-journal
 start.sh
+sheep.db
 
 .tmp
 

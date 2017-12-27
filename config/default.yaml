@@ -18,6 +18,26 @@ public_rooms:
   - "!UssDaqScmKWCvFxVek:tang.ents.ca" # rc
   - "!XbaqdTBYgSDdaXZpBE:tang.ents.ca" # 3d printing
 
+# Web server settings
+web:
+  # The external URL for the bot. Used for creating oauth urls
+  externalUrl: "https://ents.ca:5010"
+  bind: "0.0.0.0"
+  port: 5010
+
+# The database information (sqlite3)
+database:
+  file: "sheep.db"
+
+# Thermostat settings from the honeywell dev center
+honeywell:
+  enabled: true
+  consumer_key: ""
+  consumer_secret: ""
+  alternative_names:
+  - current_name: 'Electronics Heater'
+    display_name: 'Electronics Area'
+
 # Door plugin settings
 doors:
   enabled: true

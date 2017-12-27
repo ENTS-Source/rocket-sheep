@@ -1,6 +1,6 @@
 import { LogService } from "matrix-js-snippets";
 import * as _ from "lodash";
-import * as config from "config";
+import config from "../config";
 
 /**
  * Processes commands, finding appropriate plugins to handle them.
@@ -61,11 +61,11 @@ export class CommandHandler {
     }
 
     private isPublicRoom(roomId: string): boolean {
-        return config["public_rooms"].indexOf(roomId) !== -1;
+        return config.public_rooms.indexOf(roomId) !== -1;
     }
 
     private isAdmin(sender: string): boolean {
-        return config["admins"].indexOf(sender) !== -1;
+        return config.admins.indexOf(sender) !== -1;
     }
 
     private canRunCommand(sender: string, roomId: string): boolean {

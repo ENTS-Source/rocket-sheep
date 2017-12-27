@@ -20,7 +20,6 @@ export class DoorPlugin implements Plugin {
      * @param config the config to use
      */
     constructor(private config: DoorConfig) {
-
     }
 
     public init(matrixClient): void {

@@ -12,7 +12,6 @@ export class DirectorsPlugin implements Plugin {
      * @param config the config to use
      */
     constructor(private config: DirectorsConfig) {
-
     }
 
     public init(matrixClient): void {
