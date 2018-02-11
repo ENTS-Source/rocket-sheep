@@ -117,7 +117,7 @@ export class CameraPlugin implements Plugin {
     }
 }
 
-interface CameraConfig {
+export interface CameraConfig {
     api: {
         username: string;
         password: string;
@@ -127,5 +127,6 @@ interface CameraConfig {
         id: string;
         description: string;
         aliases: string[];
+        area: string; // optional
     }[];
 }

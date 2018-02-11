@@ -5,6 +5,7 @@ import { LogService } from "matrix-js-snippets";
 import { DirectorsPlugin } from "./impl/DirectorsPlugin";
 import config from "../config";
 import { HoneywellPlugin } from "./impl/HoneywellPlugin";
+import { ActivityPlugin } from "./impl/ActivityPlugin";
 
 /**
  * Holds information about the various enabled plugins
@@ -32,6 +33,10 @@ export class PluginRegistry {
         if (config.honeywell.enabled) {
             LogService.info("PluginRegistry", "Adding enabled plugin 'honeywell' to plugin list.");
             this.plugins.push(new HoneywellPlugin(config.honeywell));
+        }
+        if (config.activity.enabled) {
+            LogService.info("PluginRegistry", "Adding enabled plugin 'activity' to plugin list.");
+            this.plugins.push(new ActivityPlugin(config.cameras));
         }
 
         LogService.info("PluginRegistry", "Found " + this.plugins.length + " enabled plugins");

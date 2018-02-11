@@ -17,6 +17,9 @@ export interface SheepConfig {
     database: {
         file: string;
     };
+    activity: {
+        enabled: boolean;
+    };
     honeywell: {
         enabled: boolean;
         consumer_key: string;
@@ -55,6 +58,7 @@ export interface SheepConfig {
             id: string;
             description: string;
             aliases: string[];
+            area: string;
         }[];
     }
     logging: LogConfig;

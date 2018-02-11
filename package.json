@@ -34,6 +34,7 @@
     "lodash": "^4.17.4",
     "matrix-js-sdk": "^0.9.2",
     "matrix-js-snippets": "^0.2.5",
+    "md5": "^2.2.1",
     "moment": "^2.20.1",
     "reflect-metadata": "^0.1.10",
     "request": "^2.83.0",

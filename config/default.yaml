@@ -38,6 +38,10 @@ honeywell:
   - current_name: 'Electronics Heater'
     display_name: 'Electronics Area'
 
+# Activity plugin settings
+activity:
+  enabled: true
+
 # Door plugin settings
 doors:
   enabled: true
@@ -78,36 +82,44 @@ cameras:
   - id: "MAINROOM"
     description: "The general work area"
     aliases: ["workspace"]
+    area: "mainroom"
   - id: "ELECTRONICS"
     description: "The electronics/3D printing area"
     aliases: ["3dprinters", "3dprinting"]
+    area: "electronics area"
   - id: "woodshop"
     description: "Both woodshop cameras"
     aliases: ["wholewoodshop"]
   - id: "WOODSHOP1"
     description: "The first half of the woodshop (table saw, offcuts, etc)"
     aliases: ["tablesaw", "woodoffcuts"]
+    area: "woodshop"
   - id: "WOODSHOP2"
     description: "The second half of the woodshop (chop saw, entrance)"
     aliases: ["chopsaw", "woodshopchopsaw", "woodsaw"]
+    area: "woodshop"
   - id: "metalshop"
     description: "Both metalshop cameras"
     aliases: ["wholemetalshop"]
   - id: "METALSHOP1"
     description: "The first half of the metalshop (lathes, entrance)"
     aliases: ["lathes", "lathe", "metallathe"]
+    area: "metalshop"
   - id: "METALSHOP2"
     description: "The second half of the metalshop (mills, work tables, etc)"
     aliases: ["metalmill", "mills", "metalmills", "metalshoptables"]
+    area: "metalshop"
   - id: "pottery"
     description: "Both pottery cameras"
     aliases: ["wholepottery"]
   - id: "POTTERY1"
     description: "The pottery wheels"
     aliases: ["wheels", "potterywheels"]
+    area: "pottery studio"
   - id: "POTTERY2"
     description: "The pottery workbenches (work in progress)"
     aliases: ["potteryworkbenches"]
+    area: "pottery studio"
 
 # Settings for controlling how logging works
 logging:
