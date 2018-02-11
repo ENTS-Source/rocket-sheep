@@ -6,6 +6,7 @@ import { SheepStore } from "./db/SheepStore";
 import config from "./config";
 import Webserver from "./api/Webserver";
 
+LogService.configure(config.logging);
 LogService.info("sheep", "Starting up...");
 
 SheepStore.updateSchema().then(() => {
