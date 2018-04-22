@@ -3,6 +3,7 @@ import { LogService } from "matrix-js-snippets";
 import { CommandHandler } from "../../matrix/CommandHandler";
 import * as jpeg from "jpeg-js";
 import request = require("request");
+import crypto = require("crypto");
 import RequestResponse = request.RequestResponse;
 
 /**
@@ -91,24 +92,91 @@ export class CameraPlugin implements Plugin {
     }
 
     private getImage(shortcode: string): Promise<{ width: number, height: number, data: Buffer }> {
+        return this.getSession().then(session => {
+            return new Promise<{ width: number, height: number, data: Buffer }>((resolve, reject) => {
+                request.get(this.config.api.base_url + "/image/" + shortcode, {
+                    qs: {q: 40},
+                    headers: {
+                        "Cookie": "session=" + session.sessionId
+                    },
+                    encoding: null
+                }, (error: any, response: RequestResponse, body: any) => {
+                    if (error) {
+                        reject(error);
+                        return;
+                    }
+
+                    try {
+                        let jpegInfo = jpeg.decode(body);
+                        jpegInfo.data = body; // override data with known-good image
+                        resolve(jpegInfo);
+                    } catch (err) {
+                        reject(err);
+                    }
+                });
+            });
+        });
+    }
+
+    private getSession(): Promise<{ sessionId: string, responseId: string }> {
         return new Promise((resolve, reject) => {
-            request.get(this.config.api.base_url + "/image/" + shortcode, {
-                qs: {q: 40},
-                auth: {
-                    user: this.config.api.username,
-                    pass: this.config.api.password
+            // Start a new session
+            LogService.verbose("CameraPlugin", "Starting first request");
+            request.post(this.config.api.base_url + "/json", {
+                body: JSON.stringify({"cmd": "login", "session": null, "response": null}),
+                headers: {
+                    "Content-Type": "text/plain",
                 },
-                encoding: null
             }, (error: any, response: RequestResponse, body: any) => {
+                LogService.verbose("CameraPlugin", body);
                 if (error) {
                     reject(error);
                     return;
                 }
 
+                if (response.statusCode !== 200) {
+                    reject("Bad status code: " + response.statusCode);
+                    return;
+                }
+
                 try {
-                    let jpegInfo = jpeg.decode(body);
-                    jpegInfo.data = body; // override data with known-good image
-                    resolve(jpegInfo);
+                    const r = JSON.parse(body);
+
+                    // We don't validate the response here because blue iris always says 'fail'
+                    // if (r["result"] !== "success") {
+                    //     reject("Failed request: " + body);
+                    //     return;
+                    // }
+
+                    // Finish the auth to get a proper response and session ID
+                    const sessionId = r["session"];
+                    const responseId = crypto.createHash('md5').update(this.config.api.username + ":" + sessionId + ":" + this.config.api.password).digest("hex");
+                    LogService.verbose("CameraPlugin", "Starting second request");
+                    request.post(this.config.api.base_url + "/json", {
+                        json: {"cmd": "login", "session": sessionId, "response": responseId},
+                    }, (error: any, response: RequestResponse, body: any) => {
+                        LogService.verbose("CameraPlugin", body);
+                        if (error) {
+                            reject(error);
+                            return;
+                        }
+
+                        if (response.statusCode !== 200) {
+                            reject("Bad status code for 2nd request: " + response.statusCode);
+                            return;
+                        }
+
+                        try {
+                            if (body["result"] !== "success") {
+                                reject("Failed 2nd request: " + body);
+                                return;
+                            }
+
+                            resolve({sessionId, responseId});
+                        } catch (err) {
+                            reject(err);
+                        }
+                    });
                 } catch (err) {
                     reject(err);
                 }
