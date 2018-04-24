@@ -36,6 +36,7 @@
     "matrix-js-snippets": "^0.2.5",
     "md5": "^2.2.1",
     "moment": "^2.20.1",
+    "parse-duration": "^0.1.1",
     "reflect-metadata": "^0.1.10",
     "request": "^2.83.0",
     "sequelize": "^4.28.6",

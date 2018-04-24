@@ -24,7 +24,7 @@ export class PluginRegistry {
         }
         if (config.cameras.enabled) {
             LogService.info("PluginRegistry", "Adding enabled plugin 'cameras' to plugin list.");
-            this.plugins.push(new CameraPlugin(config.cameras));
+            this.plugins.push(new CameraPlugin(config.cameras, config.admins));
         }
         if (config.directors.enabled) {
             LogService.info("PluginRegistry", "Adding enabled plugin 'directors' to plugin list.");

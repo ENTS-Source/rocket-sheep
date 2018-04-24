@@ -4,6 +4,8 @@ import { CommandHandler } from "../../matrix/CommandHandler";
 import * as jpeg from "jpeg-js";
 import request = require("request");
 import crypto = require("crypto");
+import parseDuration = require('parse-duration');
+import moment = require("moment");
 import RequestResponse = request.RequestResponse;
 
 /**
@@ -11,17 +13,21 @@ import RequestResponse = request.RequestResponse;
  */
 export class CameraPlugin implements Plugin {
 
+    private activeCheckins: { [roomId: string]: { [shortcode: string]: { endTime: number, sender: string, timer: any, cleared: boolean } } } = {};
+
     /**
      * Creates a new camera plugin
      * @param config the config to use
      */
-    constructor(private config: CameraConfig) {
+    constructor(private config: CameraConfig, private adminUserIds: string[]) {
     }
 
     public init(matrixClient): void {
         LogService.info("CameraPlugin", "Registering command handler");
         CommandHandler.registerCommand("!camera list", this.cameraListCommand.bind(this), "!camera list - Lists all available cameras");
         CommandHandler.registerCommand("!camera show", this.cameraShowCommand.bind(this), "!camera show <camera> - Gets an image from the camera given");
+        CommandHandler.registerCommand("!camera checkin", this.cameraCheckinCommand.bind(this), "!camera checkin <camera> <duration> - Polls a camera at regular intervals for <duration> amount of time");
+        CommandHandler.registerCommand("!camera checkout", this.cameraCheckoutCommand.bind(this), "!camera checkout - Cancels any camera polls (from !camera checkin) you have");
     }
 
     private cameraListCommand(cmd: string, args: string[], roomId: string, sender: string, matrixClient: any): void {
@@ -32,29 +38,105 @@ export class CameraPlugin implements Plugin {
     }
 
     private cameraShowCommand(cmd: string, args: string[], roomId: string, sender: string, matrixClient: any): void {
-        let shortcode: string = null;
-        for (let mapping of this.config.mappings) {
-            if (mapping.id.toLowerCase() === args[0].toLowerCase()) {
-                shortcode = mapping.id;
-                break;
-            }
-
-            // Check camera aliases too
-            for (let alias of mapping.aliases) {
-                if (alias.toLowerCase() === args[0].toLowerCase()) {
-                    shortcode = mapping.id;
-                    break;
-                }
-            }
-
-            if (shortcode) break;
-        }
-
+        let shortcode: string = this.parseShortcode(args[0]);
         if (!shortcode) {
             matrixClient.sendNotice(roomId, "Camera " + args[0] + " not found");
             return;
         }
 
+        this.sendCameraImage(shortcode, roomId, matrixClient);
+    }
+
+    private cameraCheckinCommand(cmd: string, args: string[], roomId: string, sender: string, matrixClient: any): void {
+        let shortcode: string = this.parseShortcode(args[0]);
+        if (!shortcode) {
+            matrixClient.sendNotice(roomId, "Camera " + args[0] + " not found");
+            return;
+        }
+
+        if (this.activeCheckins[roomId]) {
+            const existingRegistration = this.activeCheckins[roomId][shortcode];
+            if (existingRegistration && Date.now() < existingRegistration.endTime && !existingRegistration.cleared) {
+                matrixClient.sendNotice(roomId, "Someone has already started a checkin for " + shortcode);
+                return;
+            }
+        }
+
+        let workPeriod = args[1];
+        if (!workPeriod) {
+            matrixClient.sendNotice(roomId, "Please tell me how long you'll be working for. Eg: !camera checkin woodshop 2h");
+            return;
+        }
+
+        const registration = {sender: sender, duration: parseDuration(workPeriod), timer: null, endTime: 0, cleared: false};
+        if (registration.duration <= 0) {
+            matrixClient.sendNotice(roomId, "Please enter a positive work period.");
+            return;
+        }
+        registration.endTime = Date.now() + registration.duration;
+
+        if (registration.duration > 8 * 60 * 60 * 1000) {
+            matrixClient.sendNotice(roomId, "Please enter a work period less than 8 hours");
+            return;
+        }
+
+        let interval = 15 * 60 * 1000; // 15 minutes by default
+        registration.timer = setInterval(() => {
+            this.sendCameraImage(shortcode, roomId, matrixClient);
+            if (Date.now() >= registration.endTime && !registration.cleared) {
+                clearInterval(registration.timer);
+                registration.cleared = true;
+
+                // Note: we don't use sendNotice because we want to try pinging the user.
+
+                matrixClient.getProfileInfo(sender, "displayname").then(result => {
+                    if (!result.displayname) result.displayname = sender;
+                    const pilled = '<a href="https://matrix.to/#/' + sender + '">' + result.displayname + "</a>: your checkin has expired";
+                    const plain = result.displayname + ": your checkin has expired";
+                    matrixClient.sendMessage(roomId, {
+                        msgtype: "m.text",
+                        body: plain,
+                        format: "org.matrix.custom.html",
+                        formatted_body: pilled,
+                    });
+                }).catch(() => {
+                    matrixClient.sendTextMessage(roomId, sender + ": your checkin has expired");
+                });
+            }
+        }, interval);
+
+        if (!this.activeCheckins[roomId]) this.activeCheckins[roomId] = {};
+        this.activeCheckins[roomId][shortcode] = registration;
+
+        const intervalStr = moment.duration(interval, 'milliseconds').humanize();
+        const durationStr = moment.duration(registration.duration, 'milliseconds').humanize();
+        matrixClient.sendNotice(roomId, "Okay, I'll update this room with an image from " + shortcode + " every " + intervalStr + " for " + durationStr + ". To cancel, say !camera checkout");
+    }
+
+    private cameraCheckoutCommand(cmd: string, args: string[], roomId: string, sender: string, matrixClient: any): void {
+        if (!this.activeCheckins[roomId]) {
+            matrixClient.sendNotice(roomId, "You don't have an active checkin here.");
+            return;
+        }
+
+        const isDirector = this.adminUserIds.indexOf(sender) !== -1;
+
+        let cleared = false;
+        for (const shortcode in this.activeCheckins[roomId]) {
+            const registration = this.activeCheckins[roomId][shortcode];
+            if (Date.now() >= registration.endTime || registration.cleared) continue;
+            if (registration.sender == sender || (isDirector && shortcode === args[0])) {
+                clearInterval(registration.timer);
+                registration.cleared = true;
+                cleared = true;
+                matrixClient.sendNotice(roomId, "I've cleared your checkin for " + shortcode);
+            }
+        }
+
+        if (!cleared) matrixClient.sendNotice(roomId, "You don't have an active checkin here.");
+    }
+
+    private sendCameraImage(shortcode: string, roomId: string, matrixClient: any): void {
         let imgWidth = 0;
         let imgHeight = 0;
         let imgSize = 0;
@@ -89,6 +171,23 @@ export class CameraPlugin implements Plugin {
             LogService.error("CameraPlugin", err);
             matrixClient.sendNotice(roomId, "Error getting camera image. Please try again later.")
         });
+    }
+
+    private parseShortcode(shortcode: string): string {
+        for (let mapping of this.config.mappings) {
+            if (mapping.id.toLowerCase() === shortcode.toLowerCase()) {
+                return mapping.id;
+            }
+
+            // Check camera aliases too
+            for (let alias of mapping.aliases) {
+                if (alias.toLowerCase() === shortcode.toLowerCase()) {
+                    return mapping.id;
+                }
+            }
+        }
+
+        return null; // Not found
     }
 
     private getImage(shortcode: string): Promise<{ width: number, height: number, data: Buffer }> {
