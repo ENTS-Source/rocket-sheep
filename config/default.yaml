@@ -38,6 +38,15 @@ honeywell:
   - current_name: 'Electronics Heater'
     display_name: 'Electronics Area'
 
+# Settings for the emonpi integration
+emoncms:
+  enabled: true
+  apiKey: ""
+  feeds:
+    - kwhId: "1234"
+      name: "3 phase"
+  apiUrl: "https://emoncms.org"
+
 # Activity plugin settings
 activity:
   enabled: true

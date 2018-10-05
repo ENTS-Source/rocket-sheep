@@ -20,6 +20,12 @@ export interface SheepConfig {
     activity: {
         enabled: boolean;
     };
+    emoncms: {
+        enabled: boolean;
+        apiKey: string;
+        feeds: { kwhId: string, name: string }[];
+        apiUrl: string;
+    };
     honeywell: {
         enabled: boolean;
         consumer_key: string;

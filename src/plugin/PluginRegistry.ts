@@ -6,6 +6,7 @@ import { DirectorsPlugin } from "./impl/DirectorsPlugin";
 import config from "../config";
 import { HoneywellPlugin } from "./impl/HoneywellPlugin";
 import { ActivityPlugin } from "./impl/ActivityPlugin";
+import { EmoncmsPlugin } from "./impl/EmoncmsPlugin";
 
 /**
  * Holds information about the various enabled plugins
@@ -37,6 +38,10 @@ export class PluginRegistry {
         if (config.activity.enabled) {
             LogService.info("PluginRegistry", "Adding enabled plugin 'activity' to plugin list.");
             this.plugins.push(new ActivityPlugin(config.cameras));
+        }
+        if (config.emoncms.enabled) {
+            LogService.info("PluginRegistry", "Adding enabled plugin 'emoncms' to plugin list.");
+            this.plugins.push(new EmoncmsPlugin(config.emoncms));
         }
 
         LogService.info("PluginRegistry", "Found " + this.plugins.length + " enabled plugins");
