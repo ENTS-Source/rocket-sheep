@@ -42,9 +42,16 @@ honeywell:
 emoncms:
   enabled: true
   apiKey: ""
-  feeds:
-    - kwhId: "1234"
-      name: "3 phase"
+  kwh:
+    feedIds: ["1", "2", "3"]
+    bufferSeconds: 3600
+    intervalSeconds: 900
+    minDeltaPerInterval: 0.2
+    notifications:
+      enabled: false
+      roomId: "!pottery"
+      riseMessage: "A firing has been started"
+      fallMessage: "A firing has been completed. Please allow about 14 hours for the kilns to cool down"
   apiUrl: "https://emoncms.org"
 
 # Activity plugin settings

@@ -23,7 +23,17 @@ export interface SheepConfig {
     emoncms: {
         enabled: boolean;
         apiKey: string;
-        feeds: { kwhId: string, name: string }[];
+        kwh: {
+            feedIds: string[];
+            intervalSeconds: number;
+            minDeltaPerInterval: number;
+            notifications: {
+                enabled: boolean;
+                roomId: string;
+                riseMessage: string;
+                fallMessage: string;
+            };
+        };
         apiUrl: string;
     };
     honeywell: {
