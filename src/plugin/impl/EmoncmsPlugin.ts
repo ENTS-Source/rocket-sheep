@@ -18,6 +18,9 @@ interface KwhData {
 export class EmoncmsPlugin implements Plugin {
 
     private emoncmsApi: EmoncmsFeedApi;
+    private lastRiseTs = -1;
+    private lastFallTs = -1;
+    private riseState: "rising"|"falling"|"static" = "static";
 
     /**
      * Creates a new emoncms plugin
@@ -67,9 +70,19 @@ export class EmoncmsPlugin implements Plugin {
             const diff = results[recentTs] - results[nextRecentTs];
             if (minDiff > Math.abs(diff) || diff === 0) return;
             if (diff > 0) {
-                return matrixClient.sendNotice(roomId, riseMsg);
+                if (this.riseState === "rising") return;
+                if (this.lastRiseTs < 0 || this.lastRiseTs < (nowMs - (this.config.kwh.minSecondsBeforeRise * 1000))) {
+                    this.riseState = "rising";
+                    this.lastRiseTs = nowMs;
+                    return matrixClient.sendNotice(roomId, riseMsg);
+                }
             } else {
-                return matrixClient.sendNotice(roomId, fallMsg);
+                if (this.riseState === "falling") return;
+                if (this.lastFallTs < 0 || this.lastFallTs < (nowMs - (this.config.kwh.minSecondsBeforeFall * 1000))) {
+                    this.riseState = "falling";
+                    this.lastFallTs = nowMs;
+                    return matrixClient.sendNotice(roomId, fallMsg);
+                }
             }
         }).catch(err => {
             LogService.error("EmoncmsPlugin", err);
@@ -131,6 +144,8 @@ export interface EmoncmsConfig {
         feedIds: string[];
         intervalSeconds: number;
         minDeltaPerInterval: number;
+        minSecondsBeforeRise: number;
+        minSecondsBeforeFall: number;
         notifications: {
             enabled: boolean;
             roomId: string;

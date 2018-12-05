@@ -27,6 +27,8 @@ export interface SheepConfig {
             feedIds: string[];
             intervalSeconds: number;
             minDeltaPerInterval: number;
+            minSecondsBeforeRise: number;
+            minSecondsBeforeFall: number;
             notifications: {
                 enabled: boolean;
                 roomId: string;
