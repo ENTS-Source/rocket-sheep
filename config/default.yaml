@@ -49,6 +49,8 @@ emoncms:
     minDeltaPerInterval: 0.2
     minSecondsBeforeRise: 0
     minSecondsBeforeFall: 7200
+    minIntervalsForRise: 1
+    minIntervalsForFall: 4
     notifications:
       enabled: false
       roomId: "!pottery"

@@ -42,7 +42,7 @@ export class EmoncmsPlugin implements Plugin {
     private async checkUsage(matrixClient: any) {
         LogService.info("EmoncmsPlugin", "Checking for notifications");
         const nowMs = moment().utc().valueOf();
-        const startMs = nowMs - ((this.config.kwh.intervalSeconds * 1000) * 4);
+        const startMs = nowMs - ((this.config.kwh.intervalSeconds * 1000) * 6);
         const interval = this.config.kwh.intervalSeconds;
         const minDiff = this.config.kwh.minDeltaPerInterval;
         const promises = [];
