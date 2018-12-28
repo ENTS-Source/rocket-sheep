@@ -44,10 +44,13 @@
     "sequelize": "^4.39.0",
     "sequelize-typescript": "^0.6.6",
     "sqlite3": "^4.0.2",
+    "stream-to-array": "^2.3.0",
+    "string-template": "^1.0.0",
     "striptags": "^3.1.1",
     "tslint": "^5.11.0",
     "typescript": "^3.1.1",
     "typescript-rest": "^1.7.0",
-    "umzug": "^2.1.0"
+    "umzug": "^2.1.0",
+    "wkhtmltopdf": "^0.3.4"
   }
 }

@@ -7,6 +7,7 @@ import config from "../config";
 import { HoneywellPlugin } from "./impl/HoneywellPlugin";
 import { ActivityPlugin } from "./impl/ActivityPlugin";
 import { EmoncmsPlugin } from "./impl/EmoncmsPlugin";
+import { AMemberPlugin } from "./impl/AMemberPlugin";
 
 /**
  * Holds information about the various enabled plugins
@@ -42,6 +43,10 @@ export class PluginRegistry {
         if (config.emoncms.enabled) {
             LogService.info("PluginRegistry", "Adding enabled plugin 'emoncms' to plugin list.");
             this.plugins.push(new EmoncmsPlugin(config.emoncms));
+        }
+        if (config.amember.enabled) {
+            LogService.info("PluginRegistry", "Adding enabled plugin 'amember' to plugin list.");
+            this.plugins.push(new AMemberPlugin(config.amember, config.admins, config.web.port));
         }
 
         LogService.info("PluginRegistry", "Found " + this.plugins.length + " enabled plugins");

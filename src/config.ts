@@ -38,6 +38,13 @@ export interface SheepConfig {
         };
         apiUrl: string;
     };
+    amember: {
+        enabled: boolean;
+        apiKey: string;
+        url: string;
+        activeMemberCategory: string;
+        interestedCategories: string[];
+    };
     honeywell: {
         enabled: boolean;
         consumer_key: string;

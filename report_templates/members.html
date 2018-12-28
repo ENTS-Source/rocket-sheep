@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ENTS Membership Report</title>
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+    <link rel="stylesheet" href="//cdn.rawgit.com/necolas/normalize.css/master/normalize.css">
+    <link rel="stylesheet" href="//cdn.rawgit.com/milligram/milligram/master/dist/milligram.min.css">
+    <style type="text/css">
+        html, body {
+            margin: 0;
+            padding: 0;
+            color: #111;
+            background-color: #edf2f7;
+            -webkit-print-color-adjust: exact;
+            height: 100%;
+            width: 100%;
+        }
+
+        .header {
+            position: relative;
+            display: block;
+            background-color: #fff;
+            padding: 1em;
+        }
+
+        .header img {
+            height: 95px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .header .titles {
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 2em;
+        }
+
+        .header .titles h1, .header .titles h4 {
+            padding: 0;
+            margin: 0;
+        }
+
+        .header h3 {
+            color: #666;
+        }
+
+        .currentMembership {
+            margin: 3em;
+            text-align: center;
+        }
+
+        .widget {
+            width: 180px;
+            box-shadow: 0 2px 10px 5px rgba(160, 168, 179, 0.2);
+            background-color: #fff;
+            display: inline-block;
+            margin-left: 20px;
+            margin-right: 20px;
+        }
+
+        .widget .number {
+            padding: 10px;
+            font-size: 1.2em;
+            color: #111;
+        }
+
+        .widget .number.positive {
+            color: #00ab00;
+        }
+
+        .widget .number.negative {
+            color: #ce0000;
+        }
+
+        .widget .label {
+            text-align: right;
+            background-color: #ece6ee;
+            color: #666;
+            font-size: 0.8em;
+            text-transform: uppercase;
+        }
+
+        .graph {
+            width: 600px;
+            height: 400px;
+            margin: auto auto 100px;
+        }
+
+        .graph p {
+            text-align: center;
+            font-size: 0.9em;
+        }
+
+        .footer {
+            font-size: 0.7em;
+            text-align: center;
+            color: #777;
+        }
+
+        .graphWrapper, canvas {
+            width: 600px;
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <img src="https://ents.ca/wp-content/uploads/2016/03/ENTS-Crest-Wiki.png"/>
+    <div class="titles">
+        <h1 id="test">ENTS Membership Report</h1>
+        <h4>{fromDate} - {toDate}</h4>
+    </div>
+</div>
+<div class="currentMembership">
+    <div class="widget">
+        <div class="number">{numActiveMembers}</div>
+        <div class="label">Active Members</div>
+    </div>
+    <div class="widget">
+        <div class="number">{numTotalMembers}</div>
+        <div class="label">Total Members</div>
+    </div>
+    <div class="widget">
+        <div class="number {numActiveDiffDirection}">{numActiveDiff}</div>
+        <div class="label">Active Members Delta</div>
+    </div>
+</div>
+<div class="graph">
+    <div class="graphWrapper">
+        <canvas id="changeOverTime"></canvas>
+    </div>
+    <p>Change in membership over time</p>
+</div>
+<div class="graph">
+    <div class="graphWrapper">
+        <canvas id="compositionOverTime"></canvas>
+    </div>
+    <p>Composition of membership over time</p>
+</div>
+<div class="footer">
+    Generated {generatedDate} by Rocket Sheep
+</div>
+<script type="text/javascript">
+    Function.prototype.bind = Function.prototype.bind || function (thisp) {
+        var fn = this;
+        return function () {
+            return fn.apply(thisp, arguments);
+        };
+    };
+
+    var originalSetLineDash = CanvasRenderingContext2D.prototype.setLineDash;
+    CanvasRenderingContext2D.prototype.setLineDash = function (segments) {
+        if (!segments || segments.length === 0) {
+            segments = [0];
+        }
+        return originalSetLineDash.bind(this)(segments);
+    };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var backgroundColors = [
+        'rgba(255, 99, 132, 0.2)',
+        'rgba(54, 162, 235, 0.2)',
+        'rgba(255, 206, 86, 0.2)',
+        'rgba(75, 192, 192, 0.2)',
+        'rgba(153, 102, 255, 0.2)',
+        'rgba(255, 159, 64, 0.2)'
+    ];
+    var borderColors = [
+        'rgba(255,99,132,1)',
+        'rgba(54, 162, 235, 1)',
+        'rgba(255, 206, 86, 1)',
+        'rgba(75, 192, 192, 1)',
+        'rgba(153, 102, 255, 1)',
+        'rgba(255, 159, 64, 1)'
+    ];
+
+    var changeOverTime = new Chart(document.getElementById("changeOverTime"), {
+        type: 'line',
+        animation: false,
+        data: {
+            labels: [{changeOverTimeLabels}],
+            datasets: [{
+                label: 'Active Members',
+                data: [{activeMembersOverTimeData}],
+                backgroundColor: backgroundColors[3],
+                borderColor: borderColors[3],
+                borderWidth: 1
+            }, {
+                label: 'Expired Members (Churn)',
+                data: [{expiredMembersOverTimeData}],
+                backgroundColor: backgroundColors[0],
+                borderColor: borderColors[0],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                yAxes: [{
+                    ticks: {
+                        beginAtZero: true
+                    }
+                }]
+            }
+        }
+    });
+
+    var compositionOverTimeData = {compositionOverTimeData}; // { label: values[] }
+    var compositionOverTimeDatasets = Object.keys(compositionOverTimeData).map(function (label, i) {
+        return {
+            label: label,
+            data: compositionOverTimeData[label],
+            backgroundColor: backgroundColors[i],
+            borderColor: borderColors[i],
+            borderWidth: 1
+        };
+    });
+    var compositionOverTime = new Chart(document.getElementById("compositionOverTime"), {
+        type: 'line',
+        data: {
+            labels: [{compositionOverTimeLabels}],
+            datasets: compositionOverTimeDatasets
+        },
+        options: {
+            scales: {
+                yAxes: [{
+                    ticks: {
+                        beginAtZero: true
+                    }
+                }]
+            }
+        }
+    });
+</script>
+</body>
+</html>

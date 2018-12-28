@@ -9,6 +9,8 @@ import { ApiError } from "./ApiError";
 
 export default class Webserver {
 
+    public static CACHED_REPORTS: { [reportId: string]: string } = {};
+
     private app: express.Application;
 
     constructor() {
@@ -35,6 +37,8 @@ export default class Webserver {
         //     res.sendFile(path.join(__dirname, "..", "..", "web", "index.html"));
         // });
 
+        this.app.get("/reports/:reportId", this.onReport.bind(this));
+
         // Set up the error handler
         this.app.use((err: any, _req, res, next) => {
             if (err instanceof ApiError) {
@@ -56,6 +60,17 @@ export default class Webserver {
             LogService.verbose("Webserver", "Incoming request: " + req.method + " " + req.url);
             next();
         });
+    }
+
+    private onReport(req, res) {
+        if (!Webserver.CACHED_REPORTS[req.params.reportId]) {
+            res.sendStatus(404);
+            return;
+        }
+
+        res.setHeader("Content-Type", "text/html");
+        res.status(200);
+        res.send(Webserver.CACHED_REPORTS[req.params.reportId]);
     }
 
     start() {

@@ -62,6 +62,20 @@ emoncms:
 activity:
   enabled: true
 
+# aMember Pro plugin settings
+amember:
+  enabled: true
+  apiKey: "YourApiKey"
+  url: "https://paym.ents.ca"
+  activeMemberCategory: Voting rights membership
+  interestedCategories:
+    - Regular memberships
+    - Friends of ENTS memberships
+    - Student memberships
+    - Special Case Memberships
+    - Recurring Memberships
+    - Non-recurring Memberships
+
 # Door plugin settings
 doors:
   enabled: true
