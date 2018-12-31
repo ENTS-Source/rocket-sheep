@@ -32,7 +32,7 @@ export class DoorPlugin implements Plugin {
         this.connectMq();
     }
 
-    private doorLastCommand(cmd: string, args: string[], roomId: string, sender: string, matrixClient: any): void {
+    private doorLastCommand(_cmd: string, args: string[], roomId: string, _sender: string, matrixClient: any): void {
         let numRecent = args.length > 0 ? Number(args[0]) : 1;
         if (_.isNaN(numRecent)) numRecent = 1;
         LogService.verbose("DoorPlugin", "Last " + numRecent + " unlocks requested of " + this.enterRecords.length + " available in room " + roomId);
@@ -96,8 +96,8 @@ export class DoorPlugin implements Plugin {
             if (err) throw new Error(err);
             LogService.verbose("DoorPlugin", "Connected to MQ");
 
-            conn.createChannel((err, ch) => {
-                if (err) throw new Error(err);
+            conn.createChannel((err2, ch) => {
+                if (err2) throw new Error(err2);
                 LogService.verbose("DoorPlugin", "MQ channel created");
 
                 ch.consume(this.config.mq.queue, (msg) => {

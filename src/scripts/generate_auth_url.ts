@@ -18,7 +18,7 @@ request({
         client_id: config.honeywell.consumer_key,
     },
     followRedirect: false,
-}, (err: any, response: RequestResponse, body: any) => {
+}, (err: any, response: RequestResponse, _body: any) => {
     if (err) {
         LogService.error("hw:generate_auth_url", err);
         return;

@@ -35,7 +35,7 @@ export class HoneywellApiService {
                     code: code,
                     redirect_uri: config.web.externalUrl + "/honeywell",
                 },
-            }, (err: any, response: RequestResponse, body: any) => {
+            }, (err: any, response: RequestResponse, _body: any) => {
                 if (err) {
                     LogService.error("HoneywellApiService", err);
                     reject(new ApiError(500, "Internal server error"));
@@ -54,11 +54,11 @@ export class HoneywellApiService {
                     accessToken: tokenInfo["access_token"],
                     refreshToken: tokenInfo["refresh_token"],
                     expirationTs: new Date().getTime() + ((tokenInfo["expires_in"] / 2) * 1000),
-                }).then(token => {
+                }).then(_token => {
                     LogService.info("HoneywellApiService", "New token registered");
                     resolve({"status": "ok", "message": "You may now close this window"});
-                }).catch(err => {
-                    LogService.error("HoneywellApiService", err);
+                }).catch(err2 => {
+                    LogService.error("HoneywellApiService", err2);
                     reject(new ApiError(500, "Internal server error"));
                 });
             });

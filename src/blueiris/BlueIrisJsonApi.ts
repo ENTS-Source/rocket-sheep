@@ -51,7 +51,7 @@ export class BlueIrisJsonApi {
             request.post(this.config.api.base_url + "/json", {
                 json: cmd,
                 encoding: null
-            }, (error: any, response: RequestResponse, body: any) => {
+            }, (error: any, _response: RequestResponse, body: any) => {
                 if (error) {
                     reject(error);
                     return;

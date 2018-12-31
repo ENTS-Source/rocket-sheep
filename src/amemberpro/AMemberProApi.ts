@@ -52,7 +52,7 @@ export class AMemberProApi {
                 method: method,
                 url: url,
                 qs: qs,
-            }, (error: any, response: RequestResponse, body: any) => {
+            }, (error: any, response: RequestResponse, _body: any) => {
                 if (error) {
                     reject(error);
                     return;

@@ -7,11 +7,6 @@ import parseDuration = require('parse-duration');
 import * as sum from "lodash.sum";
 import * as max from "lodash.max";
 
-interface KwhData {
-    current: number;
-    values: {[timestamp: number]: number};
-}
-
 /**
  * Plugin for reporting power usage of the space
  */
@@ -89,7 +84,7 @@ export class EmoncmsPlugin implements Plugin {
         });
     }
 
-    private kwhCommand(cmd: string, args: string[], roomId: string, sender: string, matrixClient: any): void {
+    private kwhCommand(_cmd: string, args: string[], roomId: string, _sender: string, matrixClient: any): void {
         LogService.verbose("EmoncmsPlugin", "Sending kWh usage to " + roomId);
 
         const nowMs = moment().utc().valueOf();

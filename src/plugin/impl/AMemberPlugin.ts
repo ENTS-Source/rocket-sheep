@@ -27,12 +27,12 @@ export class AMemberPlugin implements Plugin {
         this.ampApi = new AMemberProApi(config);
     }
 
-    public init(matrixClient): void {
+    public init(): void {
         LogService.info("AMemberPlugin", "Registering command handler");
         CommandHandler.registerCommand("!report members", this.membersCommand.bind(this), "!report members - Generates a membership composition report");
     }
 
-    private async membersCommand(cmd: string, args: string[], roomId: string, sender: string, matrixClient: any) {
+    private async membersCommand(_cmd: string, _args: string[], roomId: string, sender: string, matrixClient: any) {
         if (this.admins.indexOf(sender) === -1) {
             matrixClient.sendNotice(roomId, "You do not have the required permissions to run this command.");
             return;

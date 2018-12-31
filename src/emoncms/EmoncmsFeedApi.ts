@@ -61,7 +61,7 @@ export class EmoncmsFeedApi {
             request.get(this.baseUrl + "/feed/data.json", {
                 qs: qs,
                 encoding: null,
-            }, (error: any, response: RequestResponse, body: any) => {
+            }, (error: any, _response: RequestResponse, body: any) => {
                 if (error) {
                     reject(error);
                     return;

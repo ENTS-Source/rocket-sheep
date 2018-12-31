@@ -21,12 +21,12 @@ export class HoneywellPlugin implements Plugin {
         this.checkTokenAuth();
     }
 
-    public init(matrixClient): void {
+    public init(): void {
         LogService.info("HoneywellPlugin", "Registering command handler");
         CommandHandler.registerCommand("!temperature", this.temperatureCommand.bind(this), "!temperature - Displays the current temperature for each thermostat");
     }
 
-    private temperatureCommand(cmd: string, args: string[], roomId: string, sender: string, matrixClient: any): void {
+    private temperatureCommand(_cmd: string, _args: string[], roomId: string, _sender: string, matrixClient: any): void {
         HoneywellToken.findAll().then(tokens => {
             if (!tokens || tokens.length === 0) {
                 LogService.warn("HoneywellPlugin", "No oauth tokens found - cannot get temperature!");
@@ -93,7 +93,7 @@ export class HoneywellPlugin implements Plugin {
                 grant_type: "refresh_token",
                 refresh_token: token.refreshToken,
             }
-        }, (error: any, response: RequestResponse, body: any) => {
+        }, (error: any, response: RequestResponse, _body: any) => {
             if (error) {
                 LogService.error("HoneywellPlugin", error);
                 return;
@@ -134,7 +134,7 @@ export class HoneywellPlugin implements Plugin {
                     apikey: this.config.consumer_key,
                     locationId: locationId,
                 },
-            }, (err: any, response: RequestResponse, body: any) => {
+            }, (err: any, response: RequestResponse, _body: any) => {
                 if (err) {
                     LogService.error("HoneywellPlugin", err);
                     reject(err);
@@ -164,7 +164,7 @@ export class HoneywellPlugin implements Plugin {
                 qs: {
                     apikey: this.config.consumer_key,
                 },
-            }, (err: any, response: RequestResponse, body: any) => {
+            }, (err: any, response: RequestResponse, _body: any) => {
                 if (err) {
                     LogService.error("HoneywellPlugin", err);
                     reject(err);

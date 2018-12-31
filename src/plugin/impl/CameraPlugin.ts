@@ -22,7 +22,7 @@ export class CameraPlugin implements Plugin {
     constructor(private config: CameraConfig, private adminUserIds: string[]) {
     }
 
-    public init(matrixClient): void {
+    public init(): void {
         LogService.info("CameraPlugin", "Registering command handler");
         CommandHandler.registerCommand("!camera list", this.cameraListCommand.bind(this), "!camera list - Lists all available cameras");
         CommandHandler.registerCommand("!camera show", this.cameraShowCommand.bind(this), "!camera show <camera> - Gets an image from the camera given");
@@ -30,14 +30,14 @@ export class CameraPlugin implements Plugin {
         CommandHandler.registerCommand("!camera checkout", this.cameraCheckoutCommand.bind(this), "!camera checkout - Cancels any camera polls (from !camera checkin) you have");
     }
 
-    private cameraListCommand(cmd: string, args: string[], roomId: string, sender: string, matrixClient: any): void {
+    private cameraListCommand(_cmd: string, _args: string[], roomId: string, _sender: string, matrixClient: any): void {
         LogService.verbose("CameraPlugin", "Sending camera list to room " + roomId);
         let lines = this.config.mappings.map(c => c.id.toLowerCase() + " - " + c.description);
         let msg = lines.join("\n");
         matrixClient.sendNotice(roomId, msg + "\n\nUse !camera show <camera name> to see the camera");
     }
 
-    private cameraShowCommand(cmd: string, args: string[], roomId: string, sender: string, matrixClient: any): void {
+    private cameraShowCommand(_cmd: string, args: string[], roomId: string, _sender: string, matrixClient: any): void {
         let shortcode: string = this.parseShortcode(args[0]);
         if (!shortcode) {
             matrixClient.sendNotice(roomId, "Camera " + args[0] + " not found");
@@ -47,7 +47,7 @@ export class CameraPlugin implements Plugin {
         this.sendCameraImage(shortcode, roomId, matrixClient);
     }
 
-    private cameraCheckinCommand(cmd: string, args: string[], roomId: string, sender: string, matrixClient: any): void {
+    private cameraCheckinCommand(_cmd: string, args: string[], roomId: string, sender: string, matrixClient: any): void {
         let shortcode: string = this.parseShortcode(args[0]);
         if (!shortcode) {
             matrixClient.sendNotice(roomId, "Camera " + args[0] + " not found");
@@ -113,7 +113,7 @@ export class CameraPlugin implements Plugin {
         matrixClient.sendNotice(roomId, "Okay, I'll update this room with an image from " + shortcode + " every " + intervalStr + " for " + durationStr + ". To cancel, say !camera checkout");
     }
 
-    private cameraCheckoutCommand(cmd: string, args: string[], roomId: string, sender: string, matrixClient: any): void {
+    private cameraCheckoutCommand(_cmd: string, args: string[], roomId: string, sender: string, matrixClient: any): void {
         if (!this.activeCheckins[roomId]) {
             matrixClient.sendNotice(roomId, "You don't have an active checkin here.");
             return;
@@ -125,7 +125,7 @@ export class CameraPlugin implements Plugin {
         for (const shortcode in this.activeCheckins[roomId]) {
             const registration = this.activeCheckins[roomId][shortcode];
             if (Date.now() >= registration.endTime || registration.cleared) continue;
-            if (registration.sender == sender || (isDirector && shortcode === args[0])) {
+            if (registration.sender === sender || (isDirector && shortcode === args[0])) {
                 clearInterval(registration.timer);
                 registration.cleared = true;
                 cleared = true;
@@ -199,7 +199,7 @@ export class CameraPlugin implements Plugin {
                         "Cookie": "session=" + session.sessionId
                     },
                     encoding: null
-                }, (error: any, response: RequestResponse, body: any) => {
+                }, (error: any, _response: RequestResponse, body: any) => {
                     if (error) {
                         reject(error);
                         return;
@@ -253,21 +253,21 @@ export class CameraPlugin implements Plugin {
                     LogService.verbose("CameraPlugin", "Starting second request");
                     request.post(this.config.api.base_url + "/json", {
                         json: {"cmd": "login", "session": sessionId, "response": responseId},
-                    }, (error: any, response: RequestResponse, body: any) => {
+                    }, (error2: any, response2: RequestResponse, body2: any) => {
                         LogService.verbose("CameraPlugin", body);
-                        if (error) {
-                            reject(error);
+                        if (error2) {
+                            reject(error2);
                             return;
                         }
 
-                        if (response.statusCode !== 200) {
-                            reject("Bad status code for 2nd request: " + response.statusCode);
+                        if (response2.statusCode !== 200) {
+                            reject("Bad status code for 2nd request: " + response2.statusCode);
                             return;
                         }
 
                         try {
-                            if (body["result"] !== "success") {
-                                reject("Failed 2nd request: " + body);
+                            if (body2["result"] !== "success") {
+                                reject("Failed 2nd request: " + body2);
                                 return;
                             }
 

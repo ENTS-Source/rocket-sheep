@@ -20,12 +20,12 @@ export class ActivityPlugin implements Plugin {
         this.blueIris = new BlueIrisJsonApi(config);
     }
 
-    public init(matrixClient): void {
+    public init(): void {
         LogService.info("ActivityPlugin", "Registering command handler");
         CommandHandler.registerCommand("!activity", this.activityCommand.bind(this), "!activity - Displays how active the space has been recently");
     }
 
-    private activityCommand(cmd: string, args: string[], roomId: string, sender: string, matrixClient: any): void {
+    private activityCommand(_cmd: string, _args: string[], roomId: string, _sender: string, matrixClient: any): void {
         LogService.verbose("ActivityPlugin", "Sending space activity to " + roomId);
         const nowSeconds = Math.ceil(moment().utc().valueOf() / 1000); // round to the seconds since the epoch
 
