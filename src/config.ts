@@ -45,6 +45,15 @@ export interface SheepConfig {
         activeMemberCategory: string;
         interestedCategories: string[];
     };
+    points: {
+        enabled: boolean;
+        advertiseRoom: string;
+        statsRoom: string;
+        milestoneId: string;
+        goal: number;
+        widgetUrl: string;
+        widgetName: string;
+    };
     honeywell: {
         enabled: boolean;
         consumer_key: string;

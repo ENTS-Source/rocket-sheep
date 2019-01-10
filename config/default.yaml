@@ -29,6 +29,16 @@ web:
 database:
   file: "sheep.db"
 
+# The points plugin
+points:
+  enabled: true
+  advertiseRoom: "!zxWLnBMJtBomyQlnRV:tang.ents.ca"
+  statsRoom: "!rSYsJRDyYndUUHObON:tang.ents.ca" # testing
+  milestoneId: "10k"
+  goal: 10000
+  widgetUrl: "https://sheep.ents.ca/10year"
+  widgetName: "ENTS 10k"
+
 # Thermostat settings from the honeywell dev center
 honeywell:
   enabled: true
