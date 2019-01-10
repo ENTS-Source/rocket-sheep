@@ -38,7 +38,7 @@ export class ActivityPlugin implements Plugin {
             for (let clip of clips) {
                 let area = null;
                 for (let mapping of this.config.mappings) {
-                    if (mapping.id.toLowerCase() === clip.camera.toLowerCase()) {
+                    if (mapping.id.toLowerCase() === clip.camera.toLowerCase() && mapping.area) {
                         area = mapping.area.toLowerCase();
                         break;
                     }
