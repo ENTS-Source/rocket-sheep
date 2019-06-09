@@ -44,7 +44,7 @@ export class CommandHandler {
                 }
 
                 let args = message.substring(key.length).trim().split(' ');
-                CommandHandler.prefixMap[key].handler(key, args, roomId, event['sender'], this.matrixClient);
+                CommandHandler.prefixMap[key].handler(key, args, roomId, event, this.matrixClient);
             }
         }
         LogService.debug("CommandHandler", "Done processing command " + message);
@@ -91,8 +91,8 @@ export interface CommandHandlerFn {
      * @param command the command prefix
      * @param args the arguments (separated by space)
      * @param roomId the room ID
-     * @param sender the sender
+     * @param event the event
      * @param matrixClient the client
      */
-    (command: string, args: string[], roomId: string, sender: string, matrixClient: MatrixClient): void;
+    (command: string, args: string[], roomId: string, event, matrixClient: MatrixClient): void;
 }

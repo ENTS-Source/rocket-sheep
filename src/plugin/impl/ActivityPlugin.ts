@@ -4,6 +4,7 @@ import { CameraConfig } from "./CameraPlugin";
 import { BlueIrisJsonApi } from "../../blueiris/BlueIrisJsonApi";
 import * as moment from "moment";
 import { LogService, MatrixClient } from "matrix-bot-sdk";
+import striptags = require("striptags");
 
 /**
  * Plugin for querying how active the space is
@@ -61,7 +62,9 @@ export class ActivityPlugin implements Plugin {
                 message += "The " + area + " was used for " + usageStr + ", most recently " + recentStr + "\n";
             }
 
-            matrixClient.replyNotice(roomId, event, message);
+            const htmlMessage = striptags(message).replace(/\n/g, '<br/>');
+
+            matrixClient.replyNotice(roomId, event, message, htmlMessage);
         }).catch(err => {
             LogService.error("ActivityPlugin", err);
             matrixClient.replyNotice(roomId, event, "There was an error processing your command");
