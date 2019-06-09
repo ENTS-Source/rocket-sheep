@@ -144,7 +144,7 @@ export class CameraPlugin implements Plugin {
         }).then(mxc => {
             let event = {
                 msgtype: "m.image",
-                url: mxc["content_uri"],
+                url: mxc,
                 body: shortcode + ".jpg",
                 info: {
                     mimetype: "image/jpeg",

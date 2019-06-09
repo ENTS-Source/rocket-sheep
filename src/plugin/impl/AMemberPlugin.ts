@@ -151,8 +151,8 @@ export class AMemberPlugin implements Plugin {
         }, async (err, stream) => {
             delete Webserver.CACHED_REPORTS[reportId];
             if (err) {
-                console.error(err);
-                matrixClient.sendNotice(roomId, "Error generating report");
+                LogService.error("AMemberPlugin", err);
+                matrixClient.replyNotice(roomId, event, "Error generating report");
                 return;
             }
 
@@ -164,7 +164,7 @@ export class AMemberPlugin implements Plugin {
                 const mxc = await matrixClient.uploadContent(Buffer.from(data), "application/pdf", `MemberReport_${moment().format('DDMMMYYYY')}.pdf`);
                 matrixClient.sendMessage(roomId, {
                     msgtype: "m.file",
-                    url: mxc["content_uri"],
+                    url: mxc,
                     body: `MemberReport_${moment().format('DDMMMYYYY')}.pdf`,
                     info: {
                         mimetype: "application/pdf",
@@ -172,7 +172,7 @@ export class AMemberPlugin implements Plugin {
                     },
                 });
             } catch (e) {
-                console.error(err);
+                LogService.error("AMemberPlugin", e);
                 matrixClient.replyNotice(roomId, event, "Error uploading report");
             }
         });
