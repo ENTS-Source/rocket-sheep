@@ -49,8 +49,8 @@ export class DoorPlugin implements Plugin {
             records.push(this.enterRecords[this.enterRecords.length - i - 1]);
         }
 
-        let messsage = (records.length > 1 ? "Showing " + numRecent + " most recent entries:\n" : "") + records.map(r => r.displayName + "     " + r.time.fromNow()).join("\n");
-        matrixClient.replyNotice(roomId, event, messsage);
+        let message = (records.length > 1 ? "Showing " + numRecent + " most recent entries:\n" : "") + records.map(r => r.displayName + "     " + r.time.fromNow()).join("\n");
+        matrixClient.replyNotice(roomId, event, message, message.replace(/\n/g, '<br/>'));
     }
 
     private rotateMemory(): void {

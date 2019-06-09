@@ -78,7 +78,7 @@ export class CommandHandler {
         for (let key in CommandHandler.prefixMap) {
             message += CommandHandler.prefixMap[key].helpText + "\n";
         }
-        this.matrixClient.replyNotice(roomId, event, message);
+        this.matrixClient.replyNotice(roomId, event, message, message.replace(/\n/g, '<br/>'));
     }
 }
 

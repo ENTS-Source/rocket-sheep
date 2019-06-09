@@ -21,7 +21,7 @@ export class DirectorsPlugin implements Plugin {
 
     private directorsCommand(_cmd: string, _args: string[], roomId: string, event, matrixClient: MatrixClient): void {
         let message = this.config.directors.join("\n") + "\n\nContact us at " + this.config.contact_email;
-        matrixClient.replyNotice(roomId, event, message);
+        matrixClient.replyNotice(roomId, event, message, message.replace(/\n/g, '<br/>'));
     }
 }
 
