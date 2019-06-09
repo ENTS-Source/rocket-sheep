@@ -1,9 +1,9 @@
 import * as Promise from "bluebird";
 import { RequestResponse } from "request";
 import { AmpProduct, AmpProductCategory, AmpUser } from "./responses";
-import { LogService } from "matrix-js-snippets";
 import { AMemberConfig } from "../plugin/impl/AMemberPlugin";
 import request = require("request");
+import { LogService } from "matrix-bot-sdk";
 
 export class AMemberProApi {
 
@@ -44,7 +44,7 @@ export class AMemberProApi {
         if (baseUrl.endsWith("/")) baseUrl = baseUrl.substring(0, baseUrl.length - 1);
         if (!endpoint.startsWith("/")) endpoint = `/${endpoint}`;
         const url = baseUrl + endpoint;
-        LogService.verbose("AMemberProApi", `Doing web request ${method} ${url}`);
+        LogService.debug("AMemberProApi", `Doing web request ${method} ${url}`);
         if (!qs) qs = {};
         qs["_key"] = this.config.apiKey;
         return new Promise<T>((resolve, reject) => {

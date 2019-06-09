@@ -1,5 +1,4 @@
 import { Plugin } from "../Plugin";
-import { LogService } from "matrix-js-snippets";
 import { CommandHandler } from "../../matrix/CommandHandler";
 import * as jpeg from "jpeg-js";
 import request = require("request");
@@ -7,6 +6,7 @@ import crypto = require("crypto");
 import parseDuration = require('parse-duration');
 import moment = require("moment");
 import RequestResponse = request.RequestResponse;
+import { LogService, MatrixClient } from "matrix-bot-sdk";
 
 /**
  * Plugin for querying the the space's cameras.
@@ -30,53 +30,53 @@ export class CameraPlugin implements Plugin {
         CommandHandler.registerCommand("!camera checkout", this.cameraCheckoutCommand.bind(this), "!camera checkout - Cancels any camera polls (from !camera checkin) you have");
     }
 
-    private cameraListCommand(_cmd: string, _args: string[], roomId: string, _sender: string, matrixClient: any): void {
-        LogService.verbose("CameraPlugin", "Sending camera list to room " + roomId);
+    private cameraListCommand(_cmd: string, _args: string[], roomId: string, event, matrixClient: MatrixClient): void {
+        LogService.debug("CameraPlugin", "Sending camera list to room " + roomId);
         let lines = this.config.mappings.map(c => c.id.toLowerCase() + " - " + c.description);
         let msg = lines.join("\n");
-        matrixClient.sendNotice(roomId, msg + "\n\nUse !camera show <camera name> to see the camera");
+        matrixClient.replyNotice(roomId, event, msg + "\n\nUse !camera show <camera name> to see the camera");
     }
 
     private cameraShowCommand(_cmd: string, args: string[], roomId: string, _sender: string, matrixClient: any): void {
         let shortcode: string = this.parseShortcode(args[0]);
         if (!shortcode) {
-            matrixClient.sendNotice(roomId, "Camera " + args[0] + " not found");
+            matrixClient.replyNotice(roomId, event, "Camera " + args[0] + " not found");
             return;
         }
 
         this.sendCameraImage(shortcode, roomId, matrixClient);
     }
 
-    private cameraCheckinCommand(_cmd: string, args: string[], roomId: string, sender: string, matrixClient: any): void {
+    private cameraCheckinCommand(_cmd: string, args: string[], roomId: string, event, matrixClient: any): void {
         let shortcode: string = this.parseShortcode(args[0]);
         if (!shortcode) {
-            matrixClient.sendNotice(roomId, "Camera " + args[0] + " not found");
+            matrixClient.replyNotice(roomId, event, "Camera " + args[0] + " not found");
             return;
         }
 
         if (this.activeCheckins[roomId]) {
             const existingRegistration = this.activeCheckins[roomId][shortcode];
             if (existingRegistration && Date.now() < existingRegistration.endTime && !existingRegistration.cleared) {
-                matrixClient.sendNotice(roomId, "Someone has already started a checkin for " + shortcode);
+                matrixClient.replyNotice(roomId, event, "Someone has already started a checkin for " + shortcode);
                 return;
             }
         }
 
         let workPeriod = args[1];
         if (!workPeriod) {
-            matrixClient.sendNotice(roomId, "Please tell me how long you'll be working for. Eg: !camera checkin woodshop 2h");
+            matrixClient.replyNotice(roomId, event, "Please tell me how long you'll be working for. Eg: !camera checkin woodshop 2h");
             return;
         }
 
-        const registration = {sender: sender, duration: parseDuration(workPeriod), timer: null, endTime: 0, cleared: false};
+        const registration = {sender: event['sender'], duration: parseDuration(workPeriod), timer: null, endTime: 0, cleared: false};
         if (registration.duration <= 0) {
-            matrixClient.sendNotice(roomId, "Please enter a positive work period.");
+            matrixClient.replyNotice(roomId, event, "Please enter a positive work period.");
             return;
         }
         registration.endTime = Date.now() + registration.duration;
 
         if (registration.duration > 8 * 60 * 60 * 1000) {
-            matrixClient.sendNotice(roomId, "Please enter a work period less than 8 hours");
+            matrixClient.replyNotice(roomId, event, "Please enter a work period less than 8 hours");
             return;
         }
 
@@ -89,18 +89,14 @@ export class CameraPlugin implements Plugin {
 
                 // Note: we don't use sendNotice because we want to try pinging the user.
 
-                matrixClient.getProfileInfo(sender, "displayname").then(result => {
-                    if (!result.displayname) result.displayname = sender;
-                    const pilled = '<a href="https://matrix.to/#/' + sender + '">' + result.displayname + "</a>: your checkin has expired";
-                    const plain = result.displayname + ": your checkin has expired";
-                    matrixClient.sendMessage(roomId, {
-                        msgtype: "m.text",
-                        body: plain,
-                        format: "org.matrix.custom.html",
-                        formatted_body: pilled,
-                    });
-                }).catch(() => {
-                    matrixClient.sendTextMessage(roomId, sender + ": your checkin has expired");
+                // TODO: Proper mention (needs bot-sdk support)
+                const pilled = '<a href="https://matrix.to/#/' + event['sender'] + '">' + event['sender'] + "</a>: your checkin has expired";
+                const plain = event['sender'] + ": your checkin has expired";
+                matrixClient.sendMessage(roomId, {
+                    msgtype: "m.text",
+                    body: plain,
+                    format: "org.matrix.custom.html",
+                    formatted_body: pilled,
                 });
             }
         }, interval);
@@ -110,12 +106,12 @@ export class CameraPlugin implements Plugin {
 
         const intervalStr = moment.duration(interval, 'milliseconds').humanize();
         const durationStr = moment.duration(registration.duration, 'milliseconds').humanize();
-        matrixClient.sendNotice(roomId, "Okay, I'll update this room with an image from " + shortcode + " every " + intervalStr + " for " + durationStr + ". To cancel, say !camera checkout");
+        matrixClient.replyNotice(roomId, event, "Okay, I'll update this room with an image from " + shortcode + " every " + intervalStr + " for " + durationStr + ". To cancel, say !camera checkout");
     }
 
     private cameraCheckoutCommand(_cmd: string, args: string[], roomId: string, sender: string, matrixClient: any): void {
         if (!this.activeCheckins[roomId]) {
-            matrixClient.sendNotice(roomId, "You don't have an active checkin here.");
+            matrixClient.replyNotice(roomId, event, "You don't have an active checkin here.");
             return;
         }
 
@@ -129,11 +125,11 @@ export class CameraPlugin implements Plugin {
                 clearInterval(registration.timer);
                 registration.cleared = true;
                 cleared = true;
-                matrixClient.sendNotice(roomId, "I've cleared your checkin for " + shortcode);
+                matrixClient.replyNotice(roomId, event, "I've cleared your checkin for " + shortcode);
             }
         }
 
-        if (!cleared) matrixClient.sendNotice(roomId, "You don't have an active checkin here.");
+        if (!cleared) matrixClient.replyNotice(roomId, event, "You don't have an active checkin here.");
     }
 
     private sendCameraImage(shortcode: string, roomId: string, matrixClient: any): void {
@@ -144,11 +140,7 @@ export class CameraPlugin implements Plugin {
             imgWidth = img.width;
             imgHeight = img.height;
             imgSize = img.data.length;
-            return matrixClient.uploadContent(img.data, {
-                name: shortcode + ".jpg",
-                type: 'image/jpeg',
-                rawResponse: false
-            });
+            return matrixClient.uploadContent(img.data, 'image/jpeg', `${shortcode}.jpg`);
         }).then(mxc => {
             let event = {
                 msgtype: "m.image",
@@ -162,14 +154,14 @@ export class CameraPlugin implements Plugin {
                 }
             };
             LogService.info("CameraPlugin", "Sending camera image " + shortcode + " to room " + roomId);
-            LogService.verbose("CameraPlugin", event);
+            LogService.debug("CameraPlugin", event);
             return matrixClient.sendMessage(roomId, event);
         }).then(eventId => {
-            LogService.verbose("CameraPlugin", "Event for image " + shortcode + ": " + eventId);
+            LogService.debug("CameraPlugin", "Event for image " + shortcode + ": " + eventId);
         }).catch(err => {
             LogService.error("CameraPlugin", "Error processing command for camera " + shortcode);
             LogService.error("CameraPlugin", err);
-            matrixClient.sendNotice(roomId, "Error getting camera image. Please try again later.")
+            matrixClient.replyNotice(roomId, event, "Error getting camera image. Please try again later.")
         });
     }
 
@@ -220,14 +212,14 @@ export class CameraPlugin implements Plugin {
     private getSession(): Promise<{ sessionId: string, responseId: string }> {
         return new Promise((resolve, reject) => {
             // Start a new session
-            LogService.verbose("CameraPlugin", "Starting first request");
+            LogService.debug("CameraPlugin", "Starting first request");
             request.post(this.config.api.base_url + "/json", {
                 body: JSON.stringify({"cmd": "login", "session": null, "response": null}),
                 headers: {
                     "Content-Type": "text/plain",
                 },
             }, (error: any, response: RequestResponse, body: any) => {
-                LogService.verbose("CameraPlugin", body);
+                LogService.debug("CameraPlugin", body);
                 if (error) {
                     reject(error);
                     return;
@@ -250,11 +242,11 @@ export class CameraPlugin implements Plugin {
                     // Finish the auth to get a proper response and session ID
                     const sessionId = r["session"];
                     const responseId = crypto.createHash('md5').update(this.config.api.username + ":" + sessionId + ":" + this.config.api.password).digest("hex");
-                    LogService.verbose("CameraPlugin", "Starting second request");
+                    LogService.debug("CameraPlugin", "Starting second request");
                     request.post(this.config.api.base_url + "/json", {
                         json: {"cmd": "login", "session": sessionId, "response": responseId},
                     }, (error2: any, response2: RequestResponse, body2: any) => {
-                        LogService.verbose("CameraPlugin", body);
+                        LogService.debug("CameraPlugin", body);
                         if (error2) {
                             reject(error2);
                             return;

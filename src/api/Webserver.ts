@@ -1,11 +1,11 @@
 import * as express from "express";
 import * as path from "path";
 import * as bodyParser from "body-parser";
-import { LogService } from "matrix-js-snippets";
 import { Server } from "typescript-rest";
 import * as _ from "lodash";
 import config from "../config";
 import { ApiError } from "./ApiError";
+import { LogService } from "matrix-bot-sdk";
 
 export default class Webserver {
 
@@ -57,7 +57,7 @@ export default class Webserver {
         this.app.use(express.static(path.join(__dirname, "..", "..", "web")));
         this.app.use(bodyParser.json());
         this.app.use((req, _res, next) => {
-            LogService.verbose("Webserver", "Incoming request: " + req.method + " " + req.url);
+            LogService.debug("Webserver", "Incoming request: " + req.method + " " + req.url);
             next();
         });
     }

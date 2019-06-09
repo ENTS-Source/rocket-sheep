@@ -1,12 +1,10 @@
 import { PluginRegistry } from "./plugin/PluginRegistry";
 import { CommandHandler } from "./matrix/CommandHandler";
-import * as sdk from "matrix-js-sdk";
-import { autoAcceptInvites, LogService } from "matrix-js-snippets";
 import { SheepStore } from "./db/SheepStore";
 import config from "./config";
 import Webserver from "./api/Webserver";
+import { AutojoinRoomsMixin, LogService, MatrixClient, SimpleFsStorageProvider } from "matrix-bot-sdk";
 
-LogService.configure(config.logging);
 LogService.info("sheep", "Starting up...");
 
 SheepStore.updateSchema().then(() => {
@@ -14,32 +12,22 @@ SheepStore.updateSchema().then(() => {
 
     const registry = new PluginRegistry();
 
-    //noinspection TypeScriptValidateTypes
-    const client = sdk.createClient({
-        baseUrl: config.matrix.homeserver,
-        accessToken: config.matrix.token,
-        userId: config.matrix.username,
-    });
+    const storage = new SimpleFsStorageProvider(config.matrix.storagePath);
+    const client = new MatrixClient(config.matrix.homeserver, config.matrix.token, storage);
+    AutojoinRoomsMixin.setupOnClient(client);
 
     const commandHandler = new CommandHandler(client);
 
     // Command processing handler
-    client.on("event", event => {
-        if (event.getType() !== "m.room.message") return;
-        if (event.getSender() === config.matrix.username) return;
-        if (event.getContent().msgtype !== "m.text") return;
+    client.on("room.message", async (roomId, event) => {
+        if (event['type'] !== "m.room.message" || !event['content']) return;
+        if (event['sender'] === await client.getUserId()) return;
+        if (!event['content']['body']) return;
+        if (event['content']['msgtype'] !== "m.text") return;
 
-        commandHandler.process(event);
-    });
-
-    client.on("sync", (state, oldState) => {
-        LogService.verbose("sheep", "Sync state: " + oldState + " => " + state);
-        if (state === "PREPARED") {
-            registry.init(client);
-        }
+        commandHandler.process(roomId, event);
     });
 
     LogService.info("sheep", "Starting bot");
-    autoAcceptInvites(client);
-    client.startClient();
+    client.start().then(() => registry.init(client));
 });

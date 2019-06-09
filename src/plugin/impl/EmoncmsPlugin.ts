@@ -1,11 +1,11 @@
 import { Plugin } from "../Plugin";
-import { LogService } from "matrix-js-snippets";
 import { CommandHandler } from "../../matrix/CommandHandler";
 import * as moment from "moment";
 import { EmoncmsFeedApi } from "../../emoncms/EmoncmsFeedApi";
 import parseDuration = require('parse-duration');
 import * as sum from "lodash.sum";
 import * as max from "lodash.max";
+import { LogService, MatrixClient } from "matrix-bot-sdk";
 
 /**
  * Plugin for reporting power usage of the space
@@ -25,7 +25,7 @@ export class EmoncmsPlugin implements Plugin {
         this.emoncmsApi = new EmoncmsFeedApi(config.apiUrl, config.apiKey);
     }
 
-    public init(matrixClient): void {
+    public init(matrixClient: MatrixClient): void {
         LogService.info("EmoncmsPlugin", "Registering command handler");
         CommandHandler.registerCommand("!kwh", this.kwhCommand.bind(this), "!kwh [from] [until] - Displays information for the kWh usage of the space");
 
@@ -84,8 +84,8 @@ export class EmoncmsPlugin implements Plugin {
         });
     }
 
-    private kwhCommand(_cmd: string, args: string[], roomId: string, _sender: string, matrixClient: any): void {
-        LogService.verbose("EmoncmsPlugin", "Sending kWh usage to " + roomId);
+    private kwhCommand(_cmd: string, args: string[], roomId: string, event, matrixClient: MatrixClient): void {
+        LogService.debug("EmoncmsPlugin", "Sending kWh usage to " + roomId);
 
         const nowMs = moment().utc().valueOf();
 
@@ -96,7 +96,8 @@ export class EmoncmsPlugin implements Plugin {
         const endMs = endStr === "now" ? nowMs : (nowMs - parseDuration(endStr));
 
         if ((endMs - startMs) < 24 * 60 * 60 * 1000) { // 1 day
-            return matrixClient.sendNotice(roomId, "I cannot retrieve data for less than 1 day of time.");
+            matrixClient.replyNotice(roomId, event, "I cannot retrieve data for less than 1 day of time.");
+            return;
         }
 
         const promises = [];
@@ -125,10 +126,10 @@ export class EmoncmsPlugin implements Plugin {
                 duration = `between ${moment(startMs).format(format)} and ${moment(endMs).format(format)}`;
             }
             const msg = `${delta.toFixed(2)} kWh used ${duration} (${start.toFixed(2)} kWh - ${end.toFixed(2)} kWh)`;
-            return matrixClient.sendNotice(roomId, msg);
+            matrixClient.replyNotice(roomId, event, msg);
         }).catch(err => {
             LogService.error("EmoncmsPlugin", err);
-            return matrixClient.sendNotice(roomId, "There was an error processing your command");
+            matrixClient.replyNotice(roomId, event, "There was an error processing your command");
         });
     }
 }

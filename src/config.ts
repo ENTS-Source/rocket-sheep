@@ -1,11 +1,10 @@
 import * as config from "config";
-import { LogConfig } from "matrix-js-snippets";
 
 export interface SheepConfig {
     matrix: {
         homeserver: string;
         token: string;
-        username: string;
+        storagePath: string;
     };
     admins: string[];
     public_rooms: string[];
@@ -94,8 +93,7 @@ export interface SheepConfig {
             aliases: string[];
             area: string;
         }[];
-    }
-    logging: LogConfig;
+    };
 }
 
 export default <SheepConfig>config;

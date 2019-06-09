@@ -1,7 +1,7 @@
 import * as Promise from "bluebird";
 import { RequestResponse } from "request";
-import { LogService } from "matrix-js-snippets";
 import request = require("request");
+import { LogService } from "matrix-bot-sdk";
 
 const MAX_DATAPOINTS = 2999; // It's actually 3000
 
@@ -67,7 +67,7 @@ export class EmoncmsFeedApi {
                     return;
                 }
 
-                LogService.verbose("EmoncmsFeedApi", "Response length: " + body.length);
+                LogService.debug("EmoncmsFeedApi", "Response length: " + body.length);
 
                 if (typeof(body) === "string") {
                     body = JSON.parse(body);
@@ -76,7 +76,7 @@ export class EmoncmsFeedApi {
                 }
 
 
-                LogService.verbose("EmoncmsFeedApi", body);
+                LogService.debug("EmoncmsFeedApi", body);
                 if (body["success"] === false) {
                     reject(body);
                     return;

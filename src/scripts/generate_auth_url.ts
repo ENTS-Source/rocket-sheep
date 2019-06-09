@@ -1,7 +1,7 @@
-import { LogService } from "matrix-js-snippets";
 import config from "../config";
 import { RequestResponse } from "request";
 import request = require("request");
+import { LogService } from "matrix-bot-sdk";
 
 LogService.info("hw:generate_auth_url", "Starting up...");
 if (!config.honeywell.enabled) {

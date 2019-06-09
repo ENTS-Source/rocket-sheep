@@ -2,7 +2,7 @@
 matrix:
   homeserver: "https://tang.ents.ca"
   token: "your_token_here"
-  username: "@sheep:tang.ents.ca"
+  storagePath: "./sheep.json"
 
 # Admins for the bot. These people can use the functions of the bot anywhere.
 admins:
@@ -164,13 +164,3 @@ cameras:
     description: "The pottery workbenches (work in progress)"
     aliases: ["potteryworkbenches"]
     area: "pottery studio"
-
-# Settings for controlling how logging works
-logging:
-  file: logs/rocketsheep.log
-  console: true
-  consoleLevel: info
-  fileLevel: verbose
-  rotate:
-    size: 52428800 # bytes, default is 50mb
-    count: 5

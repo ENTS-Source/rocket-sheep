@@ -3,8 +3,8 @@ import * as Promise from "bluebird";
 import { RequestResponse } from "request";
 import * as md5 from "md5";
 import { ClipListItem } from "./responses";
-import { LogService } from "matrix-js-snippets";
 import request = require("request");
+import { LogService } from "matrix-bot-sdk";
 
 export class BlueIrisJsonApi {
 
@@ -46,7 +46,7 @@ export class BlueIrisJsonApi {
     }
 
     private doCall(cmd: any, expectingFail = false): Promise<any> {
-        LogService.verbose("BlueIrisJsonApi", "Sending command: " + JSON.stringify(cmd));
+        LogService.debug("BlueIrisJsonApi", "Sending command: " + JSON.stringify(cmd));
         return new Promise((resolve, reject) => {
             request.post(this.config.api.base_url + "/json", {
                 json: cmd,
@@ -57,7 +57,7 @@ export class BlueIrisJsonApi {
                     return;
                 }
 
-                LogService.verbose("BlueIrisJsonApi", body);
+                LogService.debug("BlueIrisJsonApi", body);
                 if (!expectingFail && body['result'] === 'fail') {
                     reject(body);
                     return;

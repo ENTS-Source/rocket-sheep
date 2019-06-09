@@ -1,7 +1,6 @@
 import { Plugin } from "./Plugin";
 import { DoorPlugin } from "./impl/DoorPlugin";
 import { CameraPlugin } from "./impl/CameraPlugin";
-import { LogService } from "matrix-js-snippets";
 import { DirectorsPlugin } from "./impl/DirectorsPlugin";
 import config from "../config";
 import { HoneywellPlugin } from "./impl/HoneywellPlugin";
@@ -9,6 +8,7 @@ import { ActivityPlugin } from "./impl/ActivityPlugin";
 import { EmoncmsPlugin } from "./impl/EmoncmsPlugin";
 import { AMemberPlugin } from "./impl/AMemberPlugin";
 import { PointsPlugin } from "./impl/PointsPlugin";
+import { LogService } from "matrix-bot-sdk";
 
 /**
  * Holds information about the various enabled plugins

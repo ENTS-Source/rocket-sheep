@@ -1,5 +1,4 @@
 import { Plugin } from "../Plugin";
-import { LogService } from "matrix-js-snippets";
 import { CommandHandler } from "../../matrix/CommandHandler";
 import { AMemberProApi } from "../../amemberpro/AMemberProApi";
 import * as path from "path";
@@ -9,6 +8,7 @@ import * as wkhtmltopdf from "wkhtmltopdf";
 import * as streamToArray from "stream-to-array";
 import Webserver from "../../api/Webserver";
 import moment = require("moment");
+import { LogService, MatrixClient } from "matrix-bot-sdk";
 
 /**
  * Plugin for querying information about the membership (from aMember Pro)
@@ -32,14 +32,14 @@ export class AMemberPlugin implements Plugin {
         CommandHandler.registerCommand("!report members", this.membersCommand.bind(this), "!report members - Generates a membership composition report");
     }
 
-    private async membersCommand(_cmd: string, _args: string[], roomId: string, sender: string, matrixClient: any) {
-        if (this.admins.indexOf(sender) === -1) {
+    private async membersCommand(_cmd: string, _args: string[], roomId: string, event, matrixClient: MatrixClient) {
+        if (this.admins.indexOf(event['sender']) === -1) {
             matrixClient.sendNotice(roomId, "You do not have the required permissions to run this command.");
             return;
         }
 
-        LogService.verbose("AMemberPlugin", "Generating membership composition report for " + roomId);
-        matrixClient.sendNotice(roomId, "Generating membership report...");
+        LogService.debug("AMemberPlugin", "Generating membership composition report for " + roomId);
+        matrixClient.sendReadReceipt(roomId, event['event_id']);
         const users = await this.ampApi.getUsers();
         const products = await this.ampApi.getProducts();
         const categories = await this.ampApi.getProductCategories();
@@ -161,11 +161,7 @@ export class AMemberPlugin implements Plugin {
                 const data = [];
                 for (const part of rawData) data.push(...part);
 
-                const mxc = await matrixClient.uploadContent(Buffer.from(data), {
-                    name: `MemberReport_${moment().format('DDMMMYYYY')}.pdf`,
-                    type: 'application/pdf',
-                    rawResponse: false
-                });
+                const mxc = await matrixClient.uploadContent(Buffer.from(data), "application/pdf", `MemberReport_${moment().format('DDMMMYYYY')}.pdf`);
                 matrixClient.sendMessage(roomId, {
                     msgtype: "m.file",
                     url: mxc["content_uri"],
@@ -177,7 +173,7 @@ export class AMemberPlugin implements Plugin {
                 });
             } catch (e) {
                 console.error(err);
-                matrixClient.sendNotice(roomId, "Error uploading report");
+                matrixClient.replyNotice(roomId, event, "Error uploading report");
             }
         });
     }

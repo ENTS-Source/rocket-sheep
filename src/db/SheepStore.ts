@@ -1,10 +1,10 @@
 import { Model, Sequelize } from "sequelize-typescript";
 import config from "../config";
-import { LogService } from "matrix-js-snippets";
 import * as Promise from "bluebird";
 import * as path from "path";
 import * as Umzug from "umzug";
 import HoneywellToken from "./models/HoneywellToken";
+import { LogService } from "matrix-bot-sdk";
 
 class _SheepStore {
     private sequelize: Sequelize;
@@ -16,7 +16,7 @@ class _SheepStore {
             storage: config.database.file,
             username: "",
             password: "",
-            logging: i => LogService.verbose("SheepStore [SQL]", i)
+            logging: i => LogService.debug("SheepStore [SQL]", i)
         });
         this.sequelize.addModels(<Array<typeof Model>>[
             HoneywellToken,

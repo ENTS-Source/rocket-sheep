@@ -2,12 +2,11 @@ import { GET, Path, QueryParam } from "typescript-rest";
 import * as Promise from "bluebird";
 import { ApiError } from "../ApiError";
 import config from "../../config";
-import { LogService } from "matrix-js-snippets";
 import { RequestResponse } from "request";
 import HoneywellToken from "../../db/models/HoneywellToken";
 import request = require("request");
+import { LogService } from "matrix-bot-sdk";
 
-//@Path("/honeywell")
 export class HoneywellApiService {
 
     @GET

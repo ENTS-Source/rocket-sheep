@@ -1,11 +1,11 @@
 import { Plugin } from "../Plugin";
-import { LogService } from "matrix-js-snippets";
 import { CommandHandler } from "../../matrix/CommandHandler";
 import HoneywellToken from "../../db/models/HoneywellToken";
 import { RequestResponse } from "request";
 import * as _ from "lodash";
 import * as striptags from "striptags";
 import request = require("request");
+import { LogService, MatrixClient } from "matrix-bot-sdk";
 
 /**
  * Plugin for interacting with Honeywell thermostats.
@@ -26,11 +26,11 @@ export class HoneywellPlugin implements Plugin {
         CommandHandler.registerCommand("!temperature", this.temperatureCommand.bind(this), "!temperature - Displays the current temperature for each thermostat");
     }
 
-    private temperatureCommand(_cmd: string, _args: string[], roomId: string, _sender: string, matrixClient: any): void {
+    private temperatureCommand(_cmd: string, _args: string[], roomId: string, event, matrixClient: MatrixClient): void {
         HoneywellToken.findAll().then(tokens => {
             if (!tokens || tokens.length === 0) {
                 LogService.warn("HoneywellPlugin", "No oauth tokens found - cannot get temperature!");
-                matrixClient.sendNotice(roomId, "No devices found");
+                matrixClient.replyNotice(roomId, event, "No devices found");
                 return;
             }
 
@@ -44,7 +44,7 @@ export class HoneywellPlugin implements Plugin {
             const thermostats = _.values(deviceMap);
 
             if (thermostats.length === 0) {
-                matrixClient.sendNotice(roomId, "No devices found");
+                matrixClient.replyNotice(roomId, event, "No devices found");
                 return;
             }
 
@@ -55,12 +55,7 @@ export class HoneywellPlugin implements Plugin {
                 responseHtml += `<b>${name}:</b> ${thermostat.indoorTemperature}°C<br />`;
             }
 
-            matrixClient.sendMessage(roomId, {
-                msgtype: "m.notice",
-                body: striptags(responseHtml),
-                format: "org.matrix.custom.html",
-                formatted_body: responseHtml,
-            });
+            matrixClient.replyNotice(roomId, event, striptags(responseHtml), responseHtml);
         });
     }
 

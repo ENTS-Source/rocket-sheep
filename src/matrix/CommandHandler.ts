@@ -1,6 +1,6 @@
-import { LogService } from "matrix-js-snippets";
 import * as _ from "lodash";
 import config from "../config";
+import { LogService, MatrixClient } from "matrix-bot-sdk";
 
 /**
  * Processes commands, finding appropriate plugins to handle them.
@@ -11,42 +11,43 @@ export class CommandHandler {
 
     /**
      * Creates a new command handler
-     * @param matrixClient the matrix client to drive responses
+     * @param {MatrixClient} matrixClient the matrix client to drive responses
      */
-    constructor(private matrixClient) {
+    constructor(private matrixClient: MatrixClient) {
 
     }
 
     /**
      * Processes a matrix event. Must be an m.room.message not directed at the bot with a message type of m.text
-     * @param event the event to process
+     * @param {string} roomId the room ID the event happened in
+     * @param {*} event the event to process
      */
-    public process(event): void {
+    public process(roomId: string, event): void {
         let keys = _.keys(CommandHandler.prefixMap);
-        let message = event.getContent().body.trim();
-        LogService.verbose("CommandHandler", "Processing command " + message);
+        let message = event['content']['body'].trim();
+        LogService.debug("CommandHandler", "Processing command " + message);
 
         if (message.toLowerCase() === "!help" && keys.length > 0) {
-            LogService.verbose("CommandHandler", "Intercepting help command for room " + event.getRoomId());
-            this.sendHelp(event.getRoomId());
+            LogService.debug("CommandHandler", "Intercepting help command for room " + roomId);
+            this.sendHelp(roomId, event);
             return;
         }
 
         for (let key of keys) {
             if (message.toLowerCase().startsWith(key.toLowerCase())) {
-                LogService.verbose("CommandHandler", "Command matches prefix '" + key + "': " + message);
+                LogService.debug("CommandHandler", "Command matches prefix '" + key + "': " + message);
 
-                if (!this.canRunCommand(event.getSender(), event.getRoomId())) {
-                    LogService.verbose("CommandHandler", "Denying " + event.getSender() + " in room " + event.getRoomId() + " from using command " + message);
-                    this.matrixClient.sendNotice(event.getRoomId(), "Sorry, you don't have permission to use that command here.");
+                if (!this.canRunCommand(event['sender'], roomId)) {
+                    LogService.debug("CommandHandler", "Denying " + event['sender'] + " in room " + roomId + " from using command " + message);
+                    this.matrixClient.replyNotice(roomId, event, "Sorry, you do not have permission to use that command here");
                     return;
                 }
 
                 let args = message.substring(key.length).trim().split(' ');
-                CommandHandler.prefixMap[key].handler(key, args, event.getRoomId(), event.getSender(), this.matrixClient);
+                CommandHandler.prefixMap[key].handler(key, args, roomId, event['sender'], this.matrixClient);
             }
         }
-        LogService.verbose("CommandHandler", "Done processing command " + message);
+        LogService.debug("CommandHandler", "Done processing command " + message);
     }
 
     /**
@@ -72,12 +73,12 @@ export class CommandHandler {
         return this.isAdmin(sender) || this.isPublicRoom(roomId);
     }
 
-    private sendHelp(roomId: string): void {
+    private sendHelp(roomId: string, event): void {
         let message = "Commands:\n";
         for (let key in CommandHandler.prefixMap) {
             message += CommandHandler.prefixMap[key].helpText + "\n";
         }
-        this.matrixClient.sendNotice(roomId, message);
+        this.matrixClient.replyNotice(roomId, event, message);
     }
 }
 
@@ -93,5 +94,5 @@ export interface CommandHandlerFn {
      * @param sender the sender
      * @param matrixClient the client
      */
-    (command: string, args: string[], roomId: string, sender: string, matrixClient: any): void;
+    (command: string, args: string[], roomId: string, sender: string, matrixClient: MatrixClient): void;
 }
