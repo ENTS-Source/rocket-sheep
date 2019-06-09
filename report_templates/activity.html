@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ENTS Activity Report</title>
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+    <link rel="stylesheet" href="//cdn.rawgit.com/necolas/normalize.css/master/normalize.css">
+    <link rel="stylesheet" href="//cdn.rawgit.com/milligram/milligram/master/dist/milligram.min.css">
+    <style type="text/css">
+        html, body {
+            margin: 0;
+            padding: 0;
+            color: #111;
+            background-color: #edf2f7;
+            -webkit-print-color-adjust: exact;
+            height: 100%;
+            width: 100%;
+        }
+
+        .header {
+            position: relative;
+            display: block;
+            background-color: #fff;
+            padding: 1em;
+            margin-bottom: 40px;
+        }
+
+        .header img {
+            height: 95px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .header .titles {
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 2em;
+        }
+
+        .header .titles h1, .header .titles h4 {
+            padding: 0;
+            margin: 0;
+        }
+
+        .header h3 {
+            color: #666;
+        }
+
+        .graph {
+            border: 1px solid #98cbef;
+            border-radius: 5px;
+            background-color: #fff;
+            width: 600px;
+            padding-top: 10px;
+            margin: auto auto 50px;
+        }
+
+        .footer {
+            font-size: 0.7em;
+            text-align: center;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <img src="https://ents.ca/wp-content/uploads/2016/03/ENTS-Crest-Wiki.png"/>
+    <div class="titles">
+        <h1 id="test">ENTS Activity Report</h1>
+        <h4>{fromDate} - {toDate}</h4>
+    </div>
+</div>
+<div class="graph">
+    <div class="graphWrapper">
+        <div id="overallAllTime"></div>
+    </div>
+</div>
+<div class="graph">
+    <div class="graphWrapper">
+        <div id="woodshopAllTime"></div>
+    </div>
+</div>
+<div class="graph">
+    <div class="graphWrapper">
+        <div id="metalshopAllTime"></div>
+    </div>
+</div>
+<div class="graph">
+    <div class="graphWrapper">
+        <div id="potteryAllTime"></div>
+    </div>
+</div>
+<!--<div class="graph">-->
+<!--    <div class="graphWrapper">-->
+<!--        <div id="mainroomAllTime"></div>-->
+<!--    </div>-->
+<!--</div>-->
+<!--<div class="graph">-->
+<!--    <div class="graphWrapper">-->
+<!--        <div id="printingAllTime"></div>-->
+<!--    </div>-->
+<!--</div>-->
+<div class="footer">
+    Generated {generatedDate} by Rocket Sheep
+</div>
+<script type="text/javascript">
+    Function.prototype.bind = Function.prototype.bind || function (thisp) {
+        var fn = this;
+        return function () {
+            return fn.apply(thisp, arguments);
+        };
+    };
+
+    var originalSetLineDash = CanvasRenderingContext2D.prototype.setLineDash;
+    CanvasRenderingContext2D.prototype.setLineDash = function (segments) {
+        if (!segments || segments.length === 0) {
+            segments = [0];
+        }
+        return originalSetLineDash.bind(this)(segments);
+    };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script type="text/javascript">
+    renderGraph("#overallAllTime", {overallAllTimeData}, "Facility usage by hour (all areas)");
+    renderGraph("#woodshopAllTime", {woodshopAllTimeData}, "Woodshop usage by hour");
+    renderGraph("#metalshopAllTime", {metalshopAllTimeData}, "Metalshop usage by hour");
+    renderGraph("#potteryAllTime", {potteryAllTimeData}, "Pottery studio usage by hour");
+    // renderGraph("#mainroomAllTime", {mainroomAllTimeData}, "Mainroom usage by hour");
+    // renderGraph("#printingAllTime", {printingAllTimeData}, "Printing studio usage by hour");
+
+    function getDayOfWeek(i) {
+        var vals = [
+            'Sunday',
+            'Monday',
+            'Tuesday',
+            'Wednesday',
+            'Thursday',
+            'Friday',
+            'Saturday'
+        ];
+        return vals[i];
+    }
+
+    function renderGraph(element, rawData, title) {
+        var series = [];
+        for (var i = 0; i < 7; i++) {
+            series.push({
+                name: getDayOfWeek(i),
+                data: rawData[i]
+            });
+        }
+        series.reverse();
+
+        var options = {
+            chart: {
+                height: 300,
+                type: 'heatmap',
+                toolbar: {
+                    show: false
+                },
+                animations: {
+                    enabled: false
+                }
+            },
+            dataLabels: {
+                enabled: false
+            },
+            colors: ["#008FFB"],
+            series: series,
+            title: {
+                text: title
+            },
+            xaxis: {
+                tickAmount: 23
+            }
+        };
+
+        var chart = new ApexCharts(
+            document.querySelector(element),
+            options
+        );
+
+        chart.render();
+    }
+</script>
+</body>
+</html>

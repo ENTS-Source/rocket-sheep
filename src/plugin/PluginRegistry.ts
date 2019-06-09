@@ -39,7 +39,7 @@ export class PluginRegistry {
         }
         if (config.activity.enabled) {
             LogService.info("PluginRegistry", "Adding enabled plugin 'activity' to plugin list.");
-            this.plugins.push(new ActivityPlugin(config.cameras));
+            this.plugins.push(new ActivityPlugin(config.cameras, config.admins, config.web.port));
         }
         if (config.emoncms.enabled) {
             LogService.info("PluginRegistry", "Adding enabled plugin 'emoncms' to plugin list.");
