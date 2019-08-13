@@ -161,7 +161,7 @@ export class CameraPlugin implements Plugin {
         }).catch(err => {
             LogService.error("CameraPlugin", "Error processing command for camera " + shortcode);
             LogService.error("CameraPlugin", err);
-            matrixClient.replyNotice(roomId, event, "Error getting camera image. Please try again later.")
+            matrixClient.sendNotice(roomId, "Error getting camera image. Please try again later.");
         });
     }
 
@@ -183,19 +183,22 @@ export class CameraPlugin implements Plugin {
     }
 
     private getImage(shortcode: string): Promise<{ width: number, height: number, data: Buffer }> {
+        LogService.debug("CameraPlugin", "Getting image for shortcode: ", shortcode);
         return this.getSession().then(session => {
             return new Promise<{ width: number, height: number, data: Buffer }>((resolve, reject) => {
                 request.get(this.config.api.base_url + "/image/" + shortcode, {
-                    qs: {q: 40},
+                    qs: {q: 40, session: session.sessionId},
                     headers: {
-                        "Cookie": "session=" + session.sessionId
+                        "Cookie": "session=" + session.sessionId,
                     },
-                    encoding: null
+                    encoding: null,
                 }, (error: any, _response: RequestResponse, body: any) => {
                     if (error) {
                         reject(error);
                         return;
                     }
+
+                    LogService.debug("CameraPlugin", body);
 
                     try {
                         let jpegInfo = jpeg.decode(body);
@@ -214,7 +217,7 @@ export class CameraPlugin implements Plugin {
             // Start a new session
             LogService.debug("CameraPlugin", "Starting first request");
             request.post(this.config.api.base_url + "/json", {
-                body: JSON.stringify({"cmd": "login", "session": null, "response": null}),
+                body: JSON.stringify({"cmd": "login"}),
                 headers: {
                     "Content-Type": "text/plain",
                 },
@@ -242,11 +245,12 @@ export class CameraPlugin implements Plugin {
                     // Finish the auth to get a proper response and session ID
                     const sessionId = r["session"];
                     const responseId = crypto.createHash('md5').update(this.config.api.username + ":" + sessionId + ":" + this.config.api.password).digest("hex");
-                    LogService.debug("CameraPlugin", "Starting second request");
+                    LogService.debug("CameraPlugin", "Starting second request", responseId);
                     request.post(this.config.api.base_url + "/json", {
                         json: {"cmd": "login", "session": sessionId, "response": responseId},
+                        encoding: null,
                     }, (error2: any, response2: RequestResponse, body2: any) => {
-                        LogService.debug("CameraPlugin", body);
+                        LogService.debug("CameraPlugin", body2);
                         if (error2) {
                             reject(error2);
                             return;
