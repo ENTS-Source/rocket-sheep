@@ -44,7 +44,7 @@
     "moment": "^2.24.0",
     "parse-duration": "^0.1.1",
     "request": "^2.88.0",
-    "sequelize": "^4.39.0",
+    "sequelize": "^5.15.1",
     "sequelize-typescript": "^0.6.6",
     "sqlite3": "^4.0.2",
     "stream-to-array": "^2.3.0",
