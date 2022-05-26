@@ -2,7 +2,7 @@ import { Plugin } from "../Plugin";
 import { CommandHandler } from "../../matrix/CommandHandler";
 import * as moment from "moment";
 import { EmoncmsFeedApi } from "../../emoncms/EmoncmsFeedApi";
-import parseDuration = require('parse-duration');
+import parseDuration from 'parse-duration';
 import * as sum from "lodash.sum";
 import * as max from "lodash.max";
 import { LogService, MatrixClient } from "matrix-bot-sdk";

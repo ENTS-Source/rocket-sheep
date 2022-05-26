@@ -3,8 +3,8 @@ import { CommandHandler } from "../../matrix/CommandHandler";
 import * as jpeg from "jpeg-js";
 import request = require("request");
 import crypto = require("crypto");
-import parseDuration = require('parse-duration');
-import moment = require("moment");
+import parseDuration from 'parse-duration';
+import * as moment from "moment";
 import RequestResponse = request.RequestResponse;
 import { LogService, MatrixClient } from "matrix-bot-sdk";
 
