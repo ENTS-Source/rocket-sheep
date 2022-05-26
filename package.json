@@ -49,7 +49,7 @@
     "sqlite3": "^4.0.2",
     "stream-to-array": "^2.3.0",
     "string-template": "^1.0.0",
-    "striptags": "^3.1.1",
+    "striptags": "^3.2.0",
     "typescript": "^3.1.1",
     "typescript-rest": "^1.7.0",
     "umzug": "^2.1.0",
