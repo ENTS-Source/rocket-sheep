@@ -13,8 +13,7 @@
   "scripts": {
     "start": "npm run-script build && node ./build/app/sheep.js",
     "build": "rimraf build/app && tsc",
-    "lint": "tslint -t stylish",
-    "hw:generate_auth_url": "npm run build && node ./build/app/scripts/generate_auth_url.js"
+    "lint": "tslint -t stylish"
   },
   "license": "GPL-3.0",
   "bugs": {

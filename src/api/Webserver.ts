@@ -21,7 +21,7 @@ export default class Webserver {
     }
 
     private loadRoutes() {
-        const apis = ["honeywell"].map(a => path.join(__dirname, a, "*.js"));
+        const apis = [/* none */].map(a => path.join(__dirname, a, "*.js"));
         const router = express.Router();
         apis.forEach(a => Server.loadServices(router, [a]));
         const routes = _.uniq(router.stack.map(r => r.route.path));

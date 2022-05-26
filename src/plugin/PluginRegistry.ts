@@ -3,7 +3,6 @@ import { DoorPlugin } from "./impl/DoorPlugin";
 import { CameraPlugin } from "./impl/CameraPlugin";
 import { DirectorsPlugin } from "./impl/DirectorsPlugin";
 import config from "../config";
-import { HoneywellPlugin } from "./impl/HoneywellPlugin";
 import { ActivityPlugin } from "./impl/ActivityPlugin";
 import { EmoncmsPlugin } from "./impl/EmoncmsPlugin";
 import { AMemberPlugin } from "./impl/AMemberPlugin";
@@ -32,10 +31,6 @@ export class PluginRegistry {
         if (config.directors.enabled) {
             LogService.info("PluginRegistry", "Adding enabled plugin 'directors' to plugin list.");
             this.plugins.push(new DirectorsPlugin(config.directors));
-        }
-        if (config.honeywell.enabled) {
-            LogService.info("PluginRegistry", "Adding enabled plugin 'honeywell' to plugin list.");
-            this.plugins.push(new HoneywellPlugin(config.honeywell));
         }
         if (config.activity.enabled) {
             LogService.info("PluginRegistry", "Adding enabled plugin 'activity' to plugin list.");

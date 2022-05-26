@@ -53,15 +53,6 @@ export interface SheepConfig {
         widgetUrl: string;
         widgetName: string;
     };
-    honeywell: {
-        enabled: boolean;
-        consumer_key: string;
-        consumer_secret: string;
-        alternative_names: {
-            current_name: string;
-            display_name: string;
-        }[];
-    };
     doors: {
         enabled: boolean;
         announce_rooms: string[];

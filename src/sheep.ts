@@ -1,13 +1,12 @@
 import { PluginRegistry } from "./plugin/PluginRegistry";
 import { CommandHandler } from "./matrix/CommandHandler";
-import { SheepStore } from "./db/SheepStore";
 import config from "./config";
 import Webserver from "./api/Webserver";
 import { AutojoinRoomsMixin, LogService, MatrixClient, SimpleFsStorageProvider } from "matrix-bot-sdk";
 
 LogService.info("sheep", "Starting up...");
 
-SheepStore.updateSchema().then(() => {
+(async function() {
     new Webserver().start();
 
     const registry = new PluginRegistry();
@@ -30,4 +29,4 @@ SheepStore.updateSchema().then(() => {
 
     LogService.info("sheep", "Starting bot");
     client.start().then(() => registry.init(client));
-});
+})();

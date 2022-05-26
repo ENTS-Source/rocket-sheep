@@ -39,15 +39,6 @@ points:
   widgetUrl: "https://sheep.ents.ca/10year"
   widgetName: "ENTS 10k"
 
-# Thermostat settings from the honeywell dev center
-honeywell:
-  enabled: true
-  consumer_key: ""
-  consumer_secret: ""
-  alternative_names:
-  - current_name: 'Electronics Heater'
-    display_name: 'Electronics Area'
-
 # Settings for the emonpi integration
 emoncms:
   enabled: true
