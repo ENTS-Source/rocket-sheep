@@ -1,7 +1,5 @@
 # rocket-sheep
 
-[![TravisCI badge](https://travis-ci.org/ENTS-Source/rocket-sheep.svg?branch=master)](https://travis-ci.org/ENTS-Source/rocket-sheep)
-
 A bot running on tang.ents.ca to help with member actions: `@sheep:tang.ents.ca`. Currently supports querying cameras at ENTS and announcing when people arrive.
 
 # Running

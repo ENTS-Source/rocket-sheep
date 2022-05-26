@@ -1,19 +1,17 @@
 {
   "compilerOptions": {
-    "target": "ES5",
-    "module": "commonjs",
-    "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "sourceMap": true,
-    "noEmitHelpers": false,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "lib": ["es2015", "dom"]
+    "emitDecoratorMetadata": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "ES6",
+    "noImplicitAny": false,
+    "sourceMap": false,
+    "outDir": "./build/app",
+    "types": ["node"]
   },
-  "compileOnSave": false,
-  "buildOnSave": false,
-  "awesomeTypescriptLoaderOptions": {
-    "forkChecker": true,
-    "useWebpackText": true
-  }
+  "compileOnSave": true,
+  "include": [
+    "src/**/*"
+  ]
 }
