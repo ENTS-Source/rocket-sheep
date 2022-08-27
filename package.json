@@ -35,7 +35,7 @@
     "lodash.sum": "^4.0.2",
     "matrix-bot-sdk": "^0.5.19",
     "md5": "^2.3.0",
-    "moment": "^2.29.2",
+    "moment": "^2.29.4",
     "parse-duration": "^1.0.2",
     "request": "^2.88.2",
     "sqlite3": "^5.0.8",
