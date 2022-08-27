@@ -184,31 +184,47 @@ export class CameraPlugin implements Plugin {
 
     private getImage(shortcode: string): Promise<{ width: number, height: number, data: Buffer }> {
         LogService.debug("CameraPlugin", "Getting image for shortcode: ", shortcode);
-        return this.getSession().then(session => {
-            return new Promise<{ width: number, height: number, data: Buffer }>((resolve, reject) => {
-                request.get(this.config.api.base_url + "/image/" + shortcode, {
-                    qs: {q: 40, session: session.sessionId},
-                    headers: {
-                        "Cookie": "session=" + session.sessionId,
-                    },
-                    encoding: null,
-                }, (error: any, _response: RequestResponse, body: any) => {
+        const altLink = this.config.mappings.find(m => m.id === shortcode)?.altDownloadUrl;
+        let imgPromise: Promise<any>;
+        if (altLink) {
+            imgPromise = new Promise<any>((resolve, reject) => {
+                request.get(altLink, (error: any, _response: RequestResponse, body: any) => {
                     if (error) {
                         reject(error);
-                        return;
-                    }
-
-                    LogService.debug("CameraPlugin", body);
-
-                    try {
-                        let jpegInfo = jpeg.decode(body);
-                        jpegInfo.data = body; // override data with known-good image
-                        resolve(jpegInfo);
-                    } catch (err) {
-                        reject(err);
+                    } else {
+                        resolve(body);
                     }
                 });
             });
+        } else {
+            imgPromise = this.getSession().then(session => {
+                return new Promise<{ width: number, height: number, data: Buffer }>((resolve, reject) => {
+                    request.get(this.config.api.base_url + "/image/" + shortcode, {
+                        qs: {q: 40, session: session.sessionId},
+                        headers: {
+                            "Cookie": "session=" + session.sessionId,
+                        },
+                        encoding: null,
+                    }, (error: any, _response: RequestResponse, body: any) => {
+                        if (error) {
+                            reject(error);
+                            return;
+                        }
+
+                        resolve(body);
+                    });
+                });
+            });
+        }
+
+        return imgPromise.then(body => {
+            try {
+                let jpegInfo = jpeg.decode(body);
+                jpegInfo.data = body; // override data with known-good image
+                return jpegInfo;
+            } catch (err) {
+                throw err;
+            }
         });
     }
 
@@ -290,6 +306,7 @@ export interface CameraConfig {
         id: string;
         description: string;
         aliases: string[];
-        area: string; // optional
+        area?: string; // optional
+        altDownloadUrl?: string;
     }[];
 }

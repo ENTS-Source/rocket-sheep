@@ -21,8 +21,8 @@
   },
   "homepage": "https://github.com/ENTS-Source/rocket-sheep#readme",
   "dependencies": {
-    "@types/lodash": "^4.14.182",
-    "@types/node": "^16.11.36",
+    "@types/lodash": "^4.14.184",
+    "@types/node": "^16.11.56",
     "@types/request": "^2.48.8",
     "amqplib": "^0.9.1",
     "bluebird": "^3.7.2",
@@ -42,7 +42,7 @@
     "stream-to-array": "^2.3.0",
     "string-template": "^1.0.0",
     "striptags": "^3.2.0",
-    "typescript": "^4.7.2",
+    "typescript": "^4.8.2",
     "typescript-rest": "^3.0.4",
     "wkhtmltopdf": "^0.3.4"
   },

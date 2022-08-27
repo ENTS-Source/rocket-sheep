@@ -155,3 +155,7 @@ cameras:
     description: "The pottery workbenches (work in progress)"
     aliases: ["potteryworkbenches"]
     area: "pottery studio"
+  - id: "KILN1"
+    description: "The kilns"
+    aliases: ["kilns", "kiln"]
+    altDownloadUrl: https://example.com/KILN1.jpg
