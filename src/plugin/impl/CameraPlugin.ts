@@ -200,7 +200,7 @@ export class CameraPlugin implements Plugin {
             imgPromise = this.getSession().then(session => {
                 return new Promise<{ width: number, height: number, data: Buffer }>((resolve, reject) => {
                     request.get(this.config.api.base_url + "/image/" + shortcode, {
-                        qs: {q: 40, session: session.sessionId},
+                        qs: {q: 40, session: session.sessionId, w: 800, h: 600},
                         headers: {
                             "Cookie": "session=" + session.sessionId,
                         },
