@@ -26,7 +26,7 @@
     "@types/request": "^2.48.8",
     "bluebird": "^3.7.2",
     "config": "^2.0.1",
-    "express": "^4.18.1",
+    "express": "^4.18.2",
     "jpeg-js": "^0.4.4",
     "js-yaml": "^4.1.0",
     "lodash": "^4.17.21",
