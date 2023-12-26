@@ -53,19 +53,6 @@ export interface SheepConfig {
         widgetUrl: string;
         widgetName: string;
     };
-    doors: {
-        enabled: boolean;
-        announce_rooms: string[];
-        announce_timeout: number;
-        max_results: number;
-        mq: {
-            username: string;
-            password: string;
-            hostname: string;
-            port: number;
-            queue: string;
-        };
-    };
     directors: {
         enabled: boolean;
         directors: string[];

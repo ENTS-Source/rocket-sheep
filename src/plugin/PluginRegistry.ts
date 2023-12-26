@@ -1,5 +1,4 @@
 import { Plugin } from "./Plugin";
-import { DoorPlugin } from "./impl/DoorPlugin";
 import { CameraPlugin } from "./impl/CameraPlugin";
 import { DirectorsPlugin } from "./impl/DirectorsPlugin";
 import config from "../config";
@@ -20,10 +19,6 @@ export class PluginRegistry {
      * Creates a new plugin registry. This will cause a scan for plugins and run their pre-init routines.
      */
     constructor() {
-        if (config.doors.enabled) {
-            LogService.info("PluginRegistry", "Adding enabled plugin 'doors' to plugin list.");
-            this.plugins.push(new DoorPlugin(config.doors));
-        }
         if (config.cameras.enabled) {
             LogService.info("PluginRegistry", "Adding enabled plugin 'cameras' to plugin list.");
             this.plugins.push(new CameraPlugin(config.cameras, config.admins));

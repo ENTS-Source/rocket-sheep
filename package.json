@@ -24,7 +24,6 @@
     "@types/lodash": "^4.14.184",
     "@types/node": "^16.11.56",
     "@types/request": "^2.48.8",
-    "amqplib": "^0.9.1",
     "bluebird": "^3.7.2",
     "config": "^2.0.1",
     "express": "^4.18.1",

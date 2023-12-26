@@ -77,22 +77,6 @@ amember:
     - Recurring Memberships
     - Non-recurring Memberships
 
-# Door plugin settings
-doors:
-  enabled: true
-  announce_rooms: ["!zxWLnBMJtBomyQlnRV:tang.ents.ca"]
-  # Number of seconds to suppress announcements for the same person after an announcement
-  announce_timeout: 300
-  # Maximum number of results allowed in a door query. Zero or negative mean infinite
-  max_results: 10
-  # Message queue settings (RabbitMQ)
-  mq:
-    username: username_here
-    password: password_here
-    hostname: somewhere.com
-    port: 5672
-    queue: "ents-door-announce-rsheep"
-
 # Directors plugin settings
 directors:
   enabled: true
