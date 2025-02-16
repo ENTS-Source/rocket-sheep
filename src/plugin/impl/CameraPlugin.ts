@@ -7,6 +7,9 @@ import parseDuration from 'parse-duration';
 import * as moment from "moment";
 import RequestResponse = request.RequestResponse;
 import { LogService, MatrixClient } from "matrix-bot-sdk";
+import * as sharp from "sharp";
+import * as PImage from "pureimage";
+import {PassThrough} from "node:stream";
 
 /**
  * Plugin for querying the the space's cameras.
@@ -28,6 +31,9 @@ export class CameraPlugin implements Plugin {
         CommandHandler.registerCommand("!camera show", this.cameraShowCommand.bind(this), "!camera show <camera> - Gets an image from the camera given");
         CommandHandler.registerCommand("!camera checkin", this.cameraCheckinCommand.bind(this), "!camera checkin <camera> <duration> - Polls a camera at regular intervals for <duration> amount of time");
         CommandHandler.registerCommand("!camera checkout", this.cameraCheckoutCommand.bind(this), "!camera checkout - Cancels any camera polls (from !camera checkin) you have");
+
+        const font = PImage.registerFont(this.config.homeAssistant.fontPath, "ENTS");
+        font.loadSync();
     }
 
     private cameraListCommand(_cmd: string, _args: string[], roomId: string, event, matrixClient: MatrixClient): void {
@@ -217,9 +223,61 @@ export class CameraPlugin implements Plugin {
             });
         }
 
-        return imgPromise.then(body => {
+        let airQualityPromise: Promise<number> = Promise.resolve(-1);
+        if (this.config.homeAssistant.enabled) {
+            const device = this.config.homeAssistant.airQuality.find(q => q.cameraId.toLowerCase() === shortcode.toLowerCase());
+            if (device) {
+                airQualityPromise = new Promise((resolve, reject) => {
+                    request.get(this.config.homeAssistant.address + "/api/states/" + device.deviceId, {
+                        headers: {
+                            "Authorization": "Bearer " + this.config.homeAssistant.token,
+                        },
+                    }, (error: any, response: RequestResponse, body: any) => {
+                        if (error) {
+                            reject(error);
+                            return;
+                        }
+
+                        resolve(body);
+                    });
+                }).then((b: string) => Number(JSON.parse(b).state));
+            }
+        }
+
+        return Promise.all([imgPromise, airQualityPromise]).then(([body, airQuality]) => {
             try {
                 let jpegInfo = jpeg.decode(body);
+                if (airQuality >= 0 && Number.isInteger(airQuality)) {
+                    const img = PImage.make(200, 50);
+
+                    // Draw static UI first
+                    const ctx = img.getContext('2d');
+                    ctx.fillStyle = '#000000';
+                    ctx.fillRect(0, 0, 200, 50);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '16px ENTS';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'middle';
+                    if (airQuality <= 35) {
+                        ctx.fillText("GOOD AIR QUALITY", 1, 10);
+                    } else if (airQuality <= 60) {
+                        ctx.fillText("OKAY AIR QUALITY", 1, 10);
+                    } else {
+                        ctx.fillText("BAD AIR QUALITY", 1, 10);
+                    }
+                    ctx.fillText("Current: " + airQuality + " PM2.5", 1, 30);
+
+                    const passThroughStream = new PassThrough();
+                    const pngData = [];
+                    passThroughStream.on("data", (chunk) => pngData.push(chunk));
+                    passThroughStream.on("end", () => {});
+                    return PImage.encodePNGToStream(img, passThroughStream).then(() => {
+                        return sharp(body).composite([{input: Buffer.concat(pngData), left: 10, top: 30}]).jpeg({quality: 100}).toBuffer().then(buf => {
+                            jpegInfo.data = buf; // override data with known-good image
+                            return jpegInfo;
+                        });
+                    });
+                }
                 jpegInfo.data = body; // override data with known-good image
                 return jpegInfo;
             } catch (err) {
@@ -309,4 +367,14 @@ export interface CameraConfig {
         area?: string; // optional
         altDownloadUrl?: string;
     }[];
+    homeAssistant: {
+        enabled: boolean;
+        address: string;
+        token: string;
+        fontPath: string;
+        airQuality: {
+            cameraId: string;
+            deviceId: string;
+        }[];
+    };
 }

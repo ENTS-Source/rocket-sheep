@@ -71,6 +71,16 @@ export interface SheepConfig {
             aliases: string[];
             area: string;
         }[];
+        homeAssistant: {
+            enabled: boolean;
+            address: string;
+            token: string;
+            fontPath: string;
+            airQuality: {
+                cameraId: string;
+                deviceId: string;
+            }[];
+        };
     };
 }
 

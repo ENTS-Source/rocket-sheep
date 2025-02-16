@@ -143,3 +143,15 @@ cameras:
     description: "The kilns"
     aliases: ["kilns", "kiln"]
     altDownloadUrl: https://example.com/KILN1.jpg
+  homeAssistant:
+    enabled: false
+    address: "https://ha.example.org"
+    fontPath: "/data/font.ttf"
+    token: "secret"
+    airQuality:
+      - cameraId: "POTTERY1"
+        deviceId: ""
+      - cameraId: "POTTERY2"
+        deviceId: ""
+      - cameraId: "pottery"
+        deviceId: ""

@@ -8,6 +8,7 @@ db/*.db-journal
 start.sh
 sheep.db
 sheep.json
+*.ttf
 
 .tmp
 
