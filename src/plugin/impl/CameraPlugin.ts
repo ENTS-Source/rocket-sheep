@@ -11,6 +11,9 @@ import * as sharp from "sharp";
 import * as PImage from "pureimage";
 import {PassThrough} from "node:stream";
 
+const NO_AIR_QUALITY = Number.MIN_SAFE_INTEGER;
+const NO_TEMPERATURE = Number.MIN_SAFE_INTEGER;
+
 /**
  * Plugin for querying the the space's cameras.
  */
@@ -223,67 +226,96 @@ export class CameraPlugin implements Plugin {
             });
         }
 
-        let airQualityPromise: Promise<number> = Promise.resolve(-1);
+        let airQualityPromise: Promise<number> = Promise.resolve(NO_AIR_QUALITY);
+        let temperaturePromise: Promise<number> = Promise.resolve(NO_TEMPERATURE);
         if (this.config.homeAssistant.enabled) {
-            const device = this.config.homeAssistant.airQuality.find(q => q.cameraId.toLowerCase() === shortcode.toLowerCase());
+            let device = this.config.homeAssistant.airQuality.find(q => q.cameraId.toLowerCase() === shortcode.toLowerCase());
             if (device) {
-                airQualityPromise = new Promise((resolve, reject) => {
-                    request.get(this.config.homeAssistant.address + "/api/states/" + device.deviceId, {
-                        headers: {
-                            "Authorization": "Bearer " + this.config.homeAssistant.token,
-                        },
-                    }, (error: any, response: RequestResponse, body: any) => {
-                        if (error) {
-                            reject(error);
-                            return;
-                        }
-
-                        resolve(body);
-                    });
-                }).then((b: string) => Number(JSON.parse(b).state));
+                airQualityPromise = this.getHAState(device.deviceId);
+            }
+            device = this.config.homeAssistant.temperature.find(q => q.cameraId.toLowerCase() === shortcode.toLowerCase());
+            if (device) {
+                temperaturePromise = this.getHAState(device.deviceId);
             }
         }
 
-        return Promise.all([imgPromise, airQualityPromise]).then(([body, airQuality]) => {
+        return Promise.all([imgPromise, airQualityPromise, temperaturePromise]).then(([body, airQuality, temperature]) => {
             try {
-                let jpegInfo = jpeg.decode(body);
-                if (airQuality >= 0 && Number.isInteger(airQuality)) {
-                    const img = PImage.make(200, 50);
-
-                    // Draw static UI first
-                    const ctx = img.getContext('2d');
-                    ctx.fillStyle = '#000000';
-                    ctx.fillRect(0, 0, 200, 50);
-                    ctx.fillStyle = '#ffffff';
-                    ctx.font = '16px ENTS';
-                    ctx.textAlign = 'left';
-                    ctx.textBaseline = 'middle';
-                    if (airQuality <= 35) {
-                        ctx.fillText("GOOD AIR QUALITY", 1, 10);
-                    } else if (airQuality <= 60) {
-                        ctx.fillText("OKAY AIR QUALITY", 1, 10);
-                    } else {
-                        ctx.fillText("BAD AIR QUALITY", 1, 10);
-                    }
-                    ctx.fillText("Current: " + airQuality + " PM2.5", 1, 30);
-
-                    const passThroughStream = new PassThrough();
-                    const pngData = [];
-                    passThroughStream.on("data", (chunk) => pngData.push(chunk));
-                    passThroughStream.on("end", () => {});
-                    return PImage.encodePNGToStream(img, passThroughStream).then(() => {
-                        return sharp(body).composite([{input: Buffer.concat(pngData), left: 10, top: 30}]).jpeg({quality: 100}).toBuffer().then(buf => {
-                            jpegInfo.data = buf; // override data with known-good image
-                            return jpegInfo;
-                        });
-                    });
+                // If we don't have any work to do, don't do any work
+                if ((airQuality === NO_AIR_QUALITY || !Number.isInteger(airQuality)) && (temperature === NO_TEMPERATURE || !Number.isFinite(temperature))) {
+                    return jpeg.decode(body);
                 }
-                jpegInfo.data = body; // override data with known-good image
-                return jpegInfo;
+
+                const img = PImage.make(200, 70);
+
+                // Draw static UI first
+                const ctx = img.getContext('2d');
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, 0, 200, 50);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '16px ENTS';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+
+                const lines: string[] = [];
+
+                // Put air quality lines first
+                if (airQuality !== NO_AIR_QUALITY) {
+                    if (airQuality <= 35) {
+                        lines.push("GOOD AIR QUALITY");
+                    } else if (airQuality <= 60) {
+                        lines.push("OKAY AIR QUALITY");
+                    } else {
+                        lines.push("BAD AIR QUALITY");
+                    }
+                    lines.push("Current: " + airQuality + " PM2.5");
+                }
+
+                // Then temperature
+                if (temperature !== NO_TEMPERATURE) {
+                    lines.push(temperature.toFixed(1) + "°C");
+                }
+
+                // Render the lines
+                let offset = 10;
+                for (const line of lines) {
+                    ctx.fillText(line, 1, offset);
+                    offset += 20;
+                }
+
+                // Make the image
+                let jpegInfo = jpeg.decode(body);
+                const passThroughStream = new PassThrough();
+                const pngData = [];
+                passThroughStream.on("data", (chunk) => pngData.push(chunk));
+                passThroughStream.on("end", () => {});
+                return PImage.encodePNGToStream(img, passThroughStream).then(() => {
+                    return sharp(body).composite([{input: Buffer.concat(pngData), left: 10, top: 30}]).jpeg({quality: 100}).toBuffer().then(buf => {
+                        jpegInfo.data = buf; // override data with known-good image
+                        return jpegInfo;
+                    });
+                });
             } catch (err) {
                 throw err;
             }
         });
+    }
+
+    private getHAState(deviceId: string) {
+        return new Promise((resolve, reject) => {
+            request.get(this.config.homeAssistant.address + "/api/states/" + deviceId, {
+                headers: {
+                    "Authorization": "Bearer " + this.config.homeAssistant.token,
+                },
+            }, (error: any, response: RequestResponse, body: any) => {
+                if (error) {
+                    reject(error);
+                    return;
+                }
+
+                resolve(body);
+            });
+        }).then((b: string) => Number(JSON.parse(b).state));
     }
 
     private getSession(): Promise<{ sessionId: string, responseId: string }> {
@@ -373,6 +405,10 @@ export interface CameraConfig {
         token: string;
         fontPath: string;
         airQuality: {
+            cameraId: string;
+            deviceId: string;
+        }[];
+        temperature: {
             cameraId: string;
             deviceId: string;
         }[];

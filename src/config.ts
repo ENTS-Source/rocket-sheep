@@ -80,6 +80,10 @@ export interface SheepConfig {
                 cameraId: string;
                 deviceId: string;
             }[];
+            temperature: {
+                cameraId: string;
+                deviceId: string;
+            }[];
         };
     };
 }
