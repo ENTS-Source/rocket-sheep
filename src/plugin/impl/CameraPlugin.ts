@@ -241,9 +241,14 @@ export class CameraPlugin implements Plugin {
 
         return Promise.all([imgPromise, airQualityPromise, temperaturePromise]).then(([body, airQuality, temperature]) => {
             try {
+                const jpegInfo = jpeg.decode(body);
+
                 // If we don't have any work to do, don't do any work
                 if ((airQuality === NO_AIR_QUALITY || !Number.isInteger(airQuality)) && (temperature === NO_TEMPERATURE || !Number.isFinite(temperature))) {
-                    return jpeg.decode(body);
+                    return sharp(body).jpeg({quality: 100}).toBuffer().then(buf => {
+                        jpegInfo.data = buf;
+                        return jpegInfo;
+                    });
                 }
 
                 const img = PImage.make(200, 70);
@@ -284,7 +289,6 @@ export class CameraPlugin implements Plugin {
                 }
 
                 // Make the image
-                let jpegInfo = jpeg.decode(body);
                 const passThroughStream = new PassThrough();
                 const pngData = [];
                 passThroughStream.on("data", (chunk) => pngData.push(chunk));
