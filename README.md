@@ -70,7 +70,7 @@ The original snapshot stays in the bot process memory, and the bot sends only th
 | `home_assistant_url` | Reachable Home Assistant base URL. |
 | `allowed_rooms` | Exact Matrix room IDs permitted for commands (required). |
 | `state_file` | Matrix sync cursor on persistent volume. |
-| `privacy_pixels_wide` | Coarse sample columns **per tile** (12-128; recommended 24-48). |
+| `privacy_pixels_wide` | Coarse sample columns **per tile** (12-256; recommended 24-48). |
 | `tile_width`, `tile_height` | Output pixels for each camera tile; defaults 640x360. |
 | `jpeg_quality` | JPEG quality; default 65. |
 | `max_cameras_per_area` | Cap on camera tiles; default 12. |

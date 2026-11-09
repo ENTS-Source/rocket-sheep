@@ -59,7 +59,7 @@ func loadConfig(path string) (Config, error) {
 	if len(c.AllowedRooms) == 0 {
 		return c, errors.New("configure at least one allowed room")
 	}
-	if c.PixelsWide < 12 || c.PixelsWide > 128 || c.TileWidth < 160 || c.TileWidth > 1280 || c.TileHeight < 90 || c.TileHeight > 720 || c.JPEGQuality < 20 || c.JPEGQuality > 90 || c.MaxCameras < 1 || c.MaxCameras > 30 {
+	if c.PixelsWide < 12 || c.PixelsWide > 256 || c.TileWidth < 160 || c.TileWidth > 1280 || c.TileHeight < 90 || c.TileHeight > 720 || c.JPEGQuality < 20 || c.JPEGQuality > 90 || c.MaxCameras < 1 || c.MaxCameras > 30 {
 		return c, errors.New("invalid image settings")
 	}
 	return c, nil
