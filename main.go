@@ -17,6 +17,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -254,18 +255,95 @@ func (b *Bot) cameraJPEG(ctx context.Context, entityID string) (image.Image, err
 	}
 	return img, nil
 }
-func min(a, b int) int {
-	if a < b {
-		return a
+func findPM25Value(sensors []State) (float64, bool) {
+	for _, s := range sensors {
+		class := strings.ToLower(attr(s, "device_class"))
+		id := strings.ToLower(s.EntityID)
+		match := class == "pm25" || class == "pm2_5" || strings.Contains(id, "pm2_5") || strings.Contains(id, "pm25") || strings.Contains(id, "pm2.5")
+		if !match {
+			continue
+		}
+		v, e := strconv.ParseFloat(s.State, 64)
+		if e != nil || math.IsNaN(v) || math.IsInf(v, 0) {
+			continue
+		}
+		return v, true
 	}
-	return b
+	return 0, false
 }
-func max(a, b int) int {
-	if a > b {
-		return a
+
+func pm25State(val float64) string {
+	if val <= 35 {
+		return "GOOD"
 	}
-	return b
+	if val <= 60 {
+		return "OKAY"
+	}
+	return "BAD"
 }
+
+func pm25Color(val float64) color.RGBA {
+	if val <= 0 {
+		return color.RGBA{34, 177, 76, 255}
+	}
+	if val <= 35 {
+		t := val / 35.0
+		r := uint8(math.Round(34.0 + t*(255.0-34.0)))
+		g := uint8(math.Round(177.0 + t*(242.0-177.0)))
+		b := uint8(math.Round(76.0 + t*(0.0-76.0)))
+		return color.RGBA{r, g, b, 255}
+	}
+	if val <= 60 {
+		t := (val - 35.0) / (60.0 - 35.0)
+		r := uint8(math.Round(255.0 + t*(237.0-255.0)))
+		g := uint8(math.Round(242.0 + t*(28.0-242.0)))
+		b := uint8(math.Round(0.0 + t*(36.0-0.0)))
+		return color.RGBA{r, g, b, 255}
+	}
+	return color.RGBA{237, 28, 36, 255}
+}
+
+func drawPM25Bar(dst *image.RGBA, x, y, w, h int, val float64) {
+	if w <= 0 || h <= 0 {
+		return
+	}
+	for dx := range w {
+		frac := 0.0
+		if w > 1 {
+			frac = float64(dx) / float64(w-1)
+		}
+		col := pm25Color(frac * 100.0)
+		for dy := range h {
+			px := x + dx
+			py := y + dy
+			if image.Pt(px, py).In(dst.Bounds()) {
+				dst.SetRGBA(px, py, col)
+			}
+		}
+	}
+
+	vClamped := min(max(val, 0), 100.0)
+	ix := x
+	if w > 1 {
+		ix = x + int(math.Round((vClamped/100.0)*float64(w-1)))
+	}
+	for dy := -1; dy <= h; dy++ {
+		py := y + dy
+		if py < dst.Bounds().Min.Y || py >= dst.Bounds().Max.Y {
+			continue
+		}
+		if ix-1 >= dst.Bounds().Min.X && ix-1 < dst.Bounds().Max.X {
+			dst.SetRGBA(ix-1, py, color.RGBA{0, 0, 0, 255})
+		}
+		if ix >= dst.Bounds().Min.X && ix < dst.Bounds().Max.X {
+			dst.SetRGBA(ix, py, color.RGBA{255, 255, 255, 255})
+		}
+		if ix+1 >= dst.Bounds().Min.X && ix+1 < dst.Bounds().Max.X {
+			dst.SetRGBA(ix+1, py, color.RGBA{0, 0, 0, 255})
+		}
+	}
+}
+
 func (b *Bot) render(ctx context.Context, a AreaInfo) ([]byte, int, int, error) {
 	cameras := a.Cameras
 	if len(cameras) > b.cfg.MaxCameras {
@@ -304,17 +382,33 @@ func (b *Bot) render(ctx context.Context, a AreaInfo) ([]byte, int, int, error) 
 		return nil, 0, 0, errors.New("no camera snapshots could be retrieved")
 	}
 	lines := sensorLines(a)
+	pm25Val, hasPM25 := findPM25Value(a.Sensors)
 	if len(lines) > 0 {
 		// Solid overlay at the top left, matching the example screenshot.
 		width := 12
 		for _, line := range lines {
 			width = max(width, len(line))
 		}
+		barHeight := 8
+		extraH := 0
+		if hasPM25 {
+			stateText := pm25State(pm25Val) + " AIR QUALITY"
+			width = max(width, len(stateText))
+			extraH = barHeight + 6 + 16
+		}
 		width = min(w-20, width*8+20)
-		boxH := 14 + len(lines)*16
+		boxH := 14 + len(lines)*16 + extraH
 		draw.Draw(canvas, image.Rect(8, 8, 8+width, 8+boxH), &image.Uniform{color.RGBA{0, 0, 0, 255}}, image.Point{}, draw.Src)
 		for i, line := range lines {
 			drawText(canvas, 16, 18+i*16, line, color.White, 1)
+		}
+		if hasPM25 {
+			barX := 16
+			barY := 18 + len(lines)*16
+			barW := width - 16
+			drawPM25Bar(canvas, barX, barY, barW, barHeight, pm25Val)
+			stateText := pm25State(pm25Val) + " AIR QUALITY"
+			drawText(canvas, 16, barY+barHeight+6, stateText, color.White, 1)
 		}
 	}
 	var out bytes.Buffer
@@ -451,16 +545,8 @@ func (b *Bot) image(ctx context.Context, room, name string, jpg []byte, w, h int
 	}
 	return b.send(ctx, room, map[string]any{"msgtype": "m.image", "body": name + " (privacy-reduced snapshot)", "url": uploaded.ContentURI, "info": map[string]any{"mimetype": "image/jpeg", "size": len(jpg), "w": w, "h": h}})
 }
-func contains(items []string, s string) bool {
-	for _, v := range items {
-		if v == s {
-			return true
-		}
-	}
-	return false
-}
 func (b *Bot) handle(ctx context.Context, room, sender, body string) {
-	if !contains(b.cfg.AllowedRooms, room) {
+	if !slices.Contains(b.cfg.AllowedRooms, room) {
 		return
 	}
 	if !strings.HasPrefix(strings.ToLower(strings.TrimSpace(body)), "!camera") {
