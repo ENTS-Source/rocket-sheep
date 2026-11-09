@@ -428,7 +428,7 @@ func truncate(s string, n int) string {
 	return string(r[:n-3]) + "..."
 }
 
-// Nearest-neighbour pixelation with crop-to-fill. There is no full-resolution
+// Nearest-neighbour pixelation. There is no full-resolution
 // image included in the resulting JPEG. The sampled low-resolution image is the
 // only data used to construct the picture.
 func pixelateCover(dst *image.RGBA, rect image.Rectangle, src image.Image, pixelsWide int) {
@@ -437,26 +437,29 @@ func pixelateCover(dst *image.RGBA, rect image.Rectangle, src image.Image, pixel
 	if sw == 0 || sh == 0 {
 		return
 	}
+	draw.Draw(dst, rect, &image.Uniform{color.RGBA{0, 0, 0, 255}}, image.Point{}, draw.Src)
 	dw, dh := rect.Dx(), rect.Dy()
-	cropW, cropH := float64(sw), float64(sh)
-	if float64(sw)/float64(sh) > float64(dw)/float64(dh) {
-		cropW = float64(sh) * float64(dw) / float64(dh)
-	} else {
-		cropH = float64(sw) * float64(dh) / float64(dw)
+	fitW, fitH := dw, dh
+	if float64(sw)*float64(dh) > float64(dw)*float64(sh) {
+		fitH = max(1, int(math.Round(float64(dw)*float64(sh)/float64(sw))))
+	} else if float64(sw)*float64(dh) < float64(dw)*float64(sh) {
+		fitW = max(1, int(math.Round(float64(dh)*float64(sw)/float64(sh))))
 	}
-	offsetX := (float64(sw) - cropW) / 2
-	offsetY := (float64(sh) - cropH) / 2
-	pw := min(pixelsWide, dw)
-	ph := max(1, int(math.Round(float64(pw)*float64(dh)/float64(dw))))
+	offsetX := (dw - fitW) / 2
+	offsetY := (dh - fitH) / 2
+	fitRect := image.Rect(rect.Min.X+offsetX, rect.Min.Y+offsetY, rect.Min.X+offsetX+fitW, rect.Min.Y+offsetY+fitH)
+
+	pw := min(pixelsWide, fitW)
+	ph := min(fitH, max(1, int(math.Round(float64(pw)*float64(sh)/float64(sw)))))
 	// Each coarse pixel averages its source footprint, preventing aliasing and
 	// better removing small detail than taking a single sample.
 	samples := make([]color.RGBA, pw*ph)
 	for py := 0; py < ph; py++ {
 		for px := 0; px < pw; px++ {
-			x0 := int(offsetX + float64(px)*cropW/float64(pw))
-			x1 := int(offsetX + float64(px+1)*cropW/float64(pw))
-			y0 := int(offsetY + float64(py)*cropH/float64(ph))
-			y1 := int(offsetY + float64(py+1)*cropH/float64(ph))
+			x0 := int(float64(px) * float64(sw) / float64(pw))
+			x1 := int(float64(px+1) * float64(sw) / float64(pw))
+			y0 := int(float64(py) * float64(sh) / float64(ph))
+			y1 := int(float64(py+1) * float64(sh) / float64(ph))
 			x1 = max(x0+1, x1)
 			y1 = max(y0+1, y1)
 			// Limit the number of pixel reads per region for high-resolution cameras.
@@ -475,11 +478,11 @@ func pixelateCover(dst *image.RGBA, rect image.Rectangle, src image.Image, pixel
 			samples[py*pw+px] = color.RGBA{uint8(rr / nn), uint8(gg / nn), uint8(bb / nn), 255}
 		}
 	}
-	for yy := 0; yy < dh; yy++ {
-		sy := min(ph-1, yy*ph/dh)
-		for xx := 0; xx < dw; xx++ {
-			sx := min(pw-1, xx*pw/dw)
-			dst.SetRGBA(rect.Min.X+xx, rect.Min.Y+yy, samples[sy*pw+sx])
+	for yy := 0; yy < fitH; yy++ {
+		sy := min(ph-1, yy*ph/fitH)
+		for xx := 0; xx < fitW; xx++ {
+			sx := min(pw-1, xx*pw/fitW)
+			dst.SetRGBA(fitRect.Min.X+xx, fitRect.Min.Y+yy, samples[sy*pw+sx])
 		}
 	}
 }

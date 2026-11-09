@@ -160,6 +160,126 @@ func TestAreaSensorOverlay(t *testing.T) {
 	}
 }
 
+func TestPixelationNoCrop(t *testing.T) {
+	// Case 1: Source is wider than destination (aspect ratio mismatch).
+	// With crop-to-fill, left and right edges would be discarded.
+	// Without crop, red on the left edge and blue on the right edge must be sampled into dst.
+	srcWide := image.NewRGBA(image.Rect(0, 0, 200, 100))
+	for y := 0; y < 100; y++ {
+		for x := 0; x < 20; x++ {
+			srcWide.Set(x, y, color.RGBA{255, 0, 0, 255}) // Red left strip
+		}
+		for x := 20; x < 180; x++ {
+			srcWide.Set(x, y, color.RGBA{0, 255, 0, 255}) // Green middle
+		}
+		for x := 180; x < 200; x++ {
+			srcWide.Set(x, y, color.RGBA{0, 0, 255, 255}) // Blue right strip
+		}
+	}
+	dstWide := image.NewRGBA(image.Rect(0, 0, 100, 100))
+	pixelateCover(dstWide, dstWide.Bounds(), srcWide, 50)
+
+	// Leftmost pixel (within vertically centered fit area at y=50) should be red (from left strip)
+	leftColor := dstWide.RGBAAt(0, 50)
+	if leftColor.R < 200 || leftColor.G > 50 || leftColor.B > 50 {
+		t.Fatalf("expected left edge to be red (uncropped), got %v", leftColor)
+	}
+	// Rightmost pixel (within vertically centered fit area at y=50) should be blue (from right strip)
+	rightColor := dstWide.RGBAAt(99, 50)
+	if rightColor.B < 200 || rightColor.R > 50 || rightColor.G > 50 {
+		t.Fatalf("expected right edge to be blue (uncropped), got %v", rightColor)
+	}
+
+	// Case 2: Source is taller than destination (aspect ratio mismatch).
+	// With crop-to-fill, top and bottom edges would be discarded.
+	// Without crop, red on the top edge and blue on the bottom edge must be sampled into dst.
+	srcTall := image.NewRGBA(image.Rect(0, 0, 100, 200))
+	for y := 0; y < 20; y++ {
+		for x := 0; x < 100; x++ {
+			srcTall.Set(x, y, color.RGBA{255, 0, 0, 255}) // Red top strip
+		}
+	}
+	for y := 20; y < 180; y++ {
+		for x := 0; x < 100; x++ {
+			srcTall.Set(x, y, color.RGBA{0, 255, 0, 255}) // Green middle
+		}
+	}
+	for y := 180; y < 200; y++ {
+		for x := 0; x < 100; x++ {
+			srcTall.Set(x, y, color.RGBA{0, 0, 255, 255}) // Blue bottom strip
+		}
+	}
+	dstTall := image.NewRGBA(image.Rect(0, 0, 100, 100))
+	pixelateCover(dstTall, dstTall.Bounds(), srcTall, 50)
+
+	// Topmost pixel (within horizontally centered fit area at x=50) should be red (from top strip)
+	topColor := dstTall.RGBAAt(50, 0)
+	if topColor.R < 200 || topColor.G > 50 || topColor.B > 50 {
+		t.Fatalf("expected top edge to be red (uncropped), got %v", topColor)
+	}
+	// Bottommost pixel (within horizontally centered fit area at x=50) should be blue (from bottom strip)
+	bottomColor := dstTall.RGBAAt(50, 99)
+	if bottomColor.B < 200 || bottomColor.R > 50 || bottomColor.G > 50 {
+		t.Fatalf("expected bottom edge to be blue (uncropped), got %v", bottomColor)
+	}
+}
+
+func TestPixelationNoWarp(t *testing.T) {
+	// 2:1 aspect ratio source into 1:1 destination tile:
+	// Output should be letterboxed with top and bottom black bars and centered 100x50 image.
+	srcWide := image.NewRGBA(image.Rect(0, 0, 200, 100))
+	for y := 0; y < 100; y++ {
+		for x := 0; x < 200; x++ {
+			srcWide.Set(x, y, color.RGBA{255, 255, 255, 255}) // White image
+		}
+	}
+	dstWide := image.NewRGBA(image.Rect(0, 0, 100, 100))
+	pixelateCover(dstWide, dstWide.Bounds(), srcWide, 100)
+
+	// Top letterbox bar (e.g. at y = 5) should be black
+	topBarColor := dstWide.RGBAAt(50, 5)
+	if topBarColor != (color.RGBA{0, 0, 0, 255}) {
+		t.Fatalf("expected top bar to be black letterbox, got %v", topBarColor)
+	}
+	// Bottom letterbox bar (e.g. at y = 95) should be black
+	bottomBarColor := dstWide.RGBAAt(50, 95)
+	if bottomBarColor != (color.RGBA{0, 0, 0, 255}) {
+		t.Fatalf("expected bottom bar to be black letterbox, got %v", bottomBarColor)
+	}
+	// Center (at y = 50) should be white
+	centerColor := dstWide.RGBAAt(50, 50)
+	if centerColor != (color.RGBA{255, 255, 255, 255}) {
+		t.Fatalf("expected center to be white, got %v", centerColor)
+	}
+
+	// 1:2 aspect ratio source into 1:1 destination tile:
+	// Output should be pillarboxed with left and right black bars and centered 50x100 image.
+	srcTall := image.NewRGBA(image.Rect(0, 0, 100, 200))
+	for y := 0; y < 200; y++ {
+		for x := 0; x < 100; x++ {
+			srcTall.Set(x, y, color.RGBA{255, 255, 255, 255}) // White image
+		}
+	}
+	dstTall := image.NewRGBA(image.Rect(0, 0, 100, 100))
+	pixelateCover(dstTall, dstTall.Bounds(), srcTall, 100)
+
+	// Left pillarbox bar (e.g. at x = 5) should be black
+	leftBarColor := dstTall.RGBAAt(5, 50)
+	if leftBarColor != (color.RGBA{0, 0, 0, 255}) {
+		t.Fatalf("expected left bar to be black pillarbox, got %v", leftBarColor)
+	}
+	// Right pillarbox bar (e.g. at x = 95) should be black
+	rightBarColor := dstTall.RGBAAt(95, 50)
+	if rightBarColor != (color.RGBA{0, 0, 0, 255}) {
+		t.Fatalf("expected right bar to be black pillarbox, got %v", rightBarColor)
+	}
+	// Center (at x = 50) should be white
+	centerTallColor := dstTall.RGBAAt(50, 50)
+	if centerTallColor != (color.RGBA{255, 255, 255, 255}) {
+		t.Fatalf("expected center to be white, got %v", centerTallColor)
+	}
+}
+
 func TestPixelation256(t *testing.T) {
 	src := image.NewRGBA(image.Rect(0, 0, 640, 360))
 	for y := 0; y < 360; y++ {
