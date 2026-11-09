@@ -1,0 +1,12 @@
+services:
+  camera-bot:
+    build: .
+    restart: unless-stopped
+    environment:
+      MATRIX_TOKEN: ${MATRIX_TOKEN}
+      HA_TOKEN: ${HA_TOKEN}
+    volumes:
+      - ./config.json:/config/config.json:ro
+      - bot-data:/data
+volumes:
+  bot-data:

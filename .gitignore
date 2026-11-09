@@ -1,3 +1,9 @@
+# Go bot
+.env
+config.json
+since.txt
+
+# Node bot (legacy)
 .idea
 .awcache
 

@@ -1,0 +1,15 @@
+{
+  "matrix_url": "https://matrix.example.org",
+  "matrix_user": "@camera:example.org",
+  "matrix_token": "",
+  "home_assistant_url": "http://homeassistant:8123",
+  "home_assistant_token": "",
+  "allowed_rooms": ["!ROOM_ID:example.org"],
+  "allowed_users": ["@YOUR_USERNAME:example.org"],
+  "state_file": "/data/since.txt",
+  "privacy_pixels_wide": 48,
+  "tile_width": 640,
+  "tile_height": 360,
+  "jpeg_quality": 65,
+  "max_cameras_per_area": 12
+}
