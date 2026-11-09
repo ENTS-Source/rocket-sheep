@@ -1,6 +1,6 @@
 # rocket-sheep
 
-A bot running on tang.ents.ca to help with member actions: `@sheep:tang.ents.ca`. Currently supports querying cameras at ENTS and announcing when people arrive.
+A bot running on tang.ents.ca to help with member actions: `@sheep:tang.ents.ca`. Currently supports querying cameras at ENTS.
 
 # Running
 
