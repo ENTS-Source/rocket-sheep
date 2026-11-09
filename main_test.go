@@ -1,8 +1,13 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"image"
 	"image/color"
+	"image/jpeg"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 )
@@ -111,5 +116,62 @@ func TestConfigPrivacyPixelsWideValidation(t *testing.T) {
 
 	if _, err := loadConfig(f2.Name()); err == nil {
 		t.Fatal("expected config with privacy_pixels_wide=257 to fail validation, got nil error")
+	}
+}
+
+func TestRenderNoHeader(t *testing.T) {
+	// Create mock camera image
+	camImg := image.NewRGBA(image.Rect(0, 0, 640, 360))
+	var camBuf bytes.Buffer
+	if err := jpeg.Encode(&camBuf, camImg, &jpeg.Options{Quality: 80}); err != nil {
+		t.Fatal(err)
+	}
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/jpeg")
+		w.Write(camBuf.Bytes())
+	}))
+	defer ts.Close()
+
+	bot := &Bot{
+		cfg: Config{
+			HAURL:       ts.URL,
+			HAToken:     "mock_token",
+			TileWidth:   640,
+			TileHeight:  360,
+			PixelsWide:  48,
+			JPEGQuality: 65,
+			MaxCameras:  12,
+		},
+		http: ts.Client(),
+	}
+
+	area := AreaInfo{
+		Name: "Test Area",
+		Cameras: []State{
+			{EntityID: "camera.one", Attributes: map[string]any{"friendly_name": "Camera 1"}},
+		},
+	}
+
+	jpgBytes, w, h, err := bot.render(context.Background(), area)
+	if err != nil {
+		t.Fatalf("render failed: %v", err)
+	}
+
+	// For 1 camera: cols=1, rows=1.
+	// w = 1*640 + 2*4 = 648
+	// h = 1*(360+24) + 2*4 = 392 (previously was 392 + 56 = 448 with header)
+	expectedW := 648
+	expectedH := 392
+	if w != expectedW || h != expectedH {
+		t.Fatalf("expected dimensions %dx%d, got %dx%d", expectedW, expectedH, w, h)
+	}
+
+	decoded, err := jpeg.Decode(bytes.NewReader(jpgBytes))
+	if err != nil {
+		t.Fatalf("failed to decode rendered jpeg: %v", err)
+	}
+	if decoded.Bounds().Dx() != expectedW || decoded.Bounds().Dy() != expectedH {
+		t.Fatalf("decoded dimensions %dx%d mismatch expected %dx%d", decoded.Bounds().Dx(), decoded.Bounds().Dy(), expectedW, expectedH)
 	}
 }

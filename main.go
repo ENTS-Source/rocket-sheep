@@ -274,23 +274,20 @@ func (b *Bot) render(ctx context.Context, a AreaInfo) ([]byte, int, int, error) 
 	n := len(cameras)
 	cols := int(math.Ceil(math.Sqrt(float64(n))))
 	rows := (n + cols - 1) / cols
-	const header = 56
 	const caption = 24
 	const gap = 4
 	tw, th := b.cfg.TileWidth, b.cfg.TileHeight
 	w := cols*tw + (cols+1)*gap
-	h := header + rows*(th+caption) + (rows+1)*gap
+	h := rows*(th+caption) + (rows+1)*gap
 	canvas := image.NewRGBA(image.Rect(0, 0, w, h))
 	draw.Draw(canvas, canvas.Bounds(), &image.Uniform{color.RGBA{20, 22, 25, 255}}, image.Point{}, draw.Src)
-	drawText(canvas, 12, 14, a.Name, color.White, 3)
-	drawText(canvas, 12, 40, time.Now().Format("2006-01-02 15:04:05 MST"), color.RGBA{175, 185, 195, 255}, 1)
 	succeeded := 0
 	for i, s := range cameras {
 		cctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 		src, e := b.cameraJPEG(cctx, s.EntityID)
 		cancel()
 		x := gap + (i%cols)*(tw+gap)
-		y := header + gap + (i/cols)*(th+caption+gap)
+		y := gap + (i/cols)*(th+caption+gap)
 		if e != nil {
 			log.Printf("snapshot %s: %v", s.EntityID, e)
 			drawText(canvas, x+10, y+10, "CAMERA UNAVAILABLE", color.White, 2)
@@ -315,9 +312,9 @@ func (b *Bot) render(ctx context.Context, a AreaInfo) ([]byte, int, int, error) 
 		}
 		width = min(w-20, width*8+20)
 		boxH := 14 + len(lines)*16
-		draw.Draw(canvas, image.Rect(8, header+8, 8+width, header+8+boxH), &image.Uniform{color.RGBA{0, 0, 0, 255}}, image.Point{}, draw.Src)
+		draw.Draw(canvas, image.Rect(8, 8, 8+width, 8+boxH), &image.Uniform{color.RGBA{0, 0, 0, 255}}, image.Point{}, draw.Src)
 		for i, line := range lines {
-			drawText(canvas, 16, header+18+i*16, line, color.White, 1)
+			drawText(canvas, 16, 18+i*16, line, color.White, 1)
 		}
 	}
 	var out bytes.Buffer
