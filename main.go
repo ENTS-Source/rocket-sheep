@@ -546,7 +546,7 @@ func (b *Bot) image(ctx context.Context, room, name string, jpg []byte, w, h int
 	if uploaded.ContentURI == "" {
 		return errors.New("Matrix upload has no content_uri")
 	}
-	return b.send(ctx, room, map[string]any{"msgtype": "m.image", "body": name + " (privacy-reduced snapshot)", "url": uploaded.ContentURI, "info": map[string]any{"mimetype": "image/jpeg", "size": len(jpg), "w": w, "h": h}})
+	return b.send(ctx, room, map[string]any{"msgtype": "m.image", "body": name + ".jpg", "url": uploaded.ContentURI, "info": map[string]any{"mimetype": "image/jpeg", "size": len(jpg), "w": w, "h": h}})
 }
 func (b *Bot) handle(ctx context.Context, room, sender, body string) {
 	if !slices.Contains(b.cfg.AllowedRooms, room) {
