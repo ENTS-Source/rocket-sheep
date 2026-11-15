@@ -67,13 +67,50 @@ func loadConfig(path string) (Config, error) {
 }
 
 type State struct {
-	EntityID   string         `json:"entity_id"`
-	State      string         `json:"state"`
-	Attributes map[string]any `json:"attributes"`
+	EntityID     string         `json:"entity_id"`
+	State        string         `json:"state"`
+	Attributes   map[string]any `json:"attributes"`
+	DeviceLabels []string       `json:"device_labels,omitempty"`
 }
+
+type AreaEntity struct {
+	EntityID     string   `json:"id"`
+	DeviceLabels []string `json:"labels"`
+}
+
+func (ae *AreaEntity) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		ae.EntityID = s
+		ae.DeviceLabels = nil
+		return nil
+	}
+	type rawAreaEntity struct {
+		ID           string   `json:"id"`
+		EntityID     string   `json:"entity_id"`
+		Labels       []string `json:"labels"`
+		DeviceLabels []string `json:"device_labels"`
+	}
+	var raw rawAreaEntity
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	if raw.EntityID != "" {
+		ae.EntityID = raw.EntityID
+	} else {
+		ae.EntityID = raw.ID
+	}
+	if len(raw.DeviceLabels) > 0 {
+		ae.DeviceLabels = raw.DeviceLabels
+	} else {
+		ae.DeviceLabels = raw.Labels
+	}
+	return nil
+}
+
 type Area struct {
-	Name     string   `json:"name"`
-	Entities []string `json:"entities"`
+	Name     string       `json:"name"`
+	Entities []AreaEntity `json:"entities"`
 }
 type AreaInfo struct {
 	Name    string
@@ -122,7 +159,7 @@ func (b *Bot) haTemplate(ctx context.Context, template string) ([]byte, error) {
 
 // The template returns the complete Home Assistant area-to-entity mapping, including
 // entities whose area comes from their parent device. No entity-registry admin rights needed.
-const areaTemplate = `{% set ns = namespace(rows=[]) %}{% for id in areas() %}{% set ns.rows = ns.rows + [dict(name=area_name(id), entities=area_entities(id))] %}{% endfor %}{{ ns.rows | to_json }}`
+const areaTemplate = `{% set ns = namespace(rows=[]) %}{% for id in areas() %}{% set ns_ents = namespace(items=[]) %}{% for e in area_entities(id) %}{% set d = device_id(e) %}{% set ns_labels = namespace(items=[]) %}{% if d %}{% for l in labels(d) %}{% set ns_labels.items = ns_labels.items + [l, label_name(l)] %}{% endfor %}{% endif %}{% set ns_ents.items = ns_ents.items + [dict(id=e, labels=ns_labels.items)] %}{% endfor %}{% set ns.rows = ns.rows + [dict(name=area_name(id), entities=ns_ents.items)] %}{% endfor %}{{ ns.rows | to_json }}`
 
 func (b *Bot) discover(ctx context.Context) ([]AreaInfo, error) {
 	areasJSON, e := b.haTemplate(ctx, areaTemplate)
@@ -149,7 +186,8 @@ func (b *Bot) discover(ctx context.Context) ([]AreaInfo, error) {
 	for _, a := range areas {
 		info := AreaInfo{Name: a.Name}
 		seen := make(map[string]bool)
-		for _, id := range a.Entities {
+		for _, ent := range a.Entities {
+			id := ent.EntityID
 			if seen[id] {
 				continue
 			}
@@ -157,6 +195,9 @@ func (b *Bot) discover(ctx context.Context) ([]AreaInfo, error) {
 			s, ok := stateMap[id]
 			if !ok {
 				continue
+			}
+			if len(ent.DeviceLabels) > 0 {
+				s.DeviceLabels = ent.DeviceLabels
 			}
 			if strings.HasPrefix(id, "camera.") && s.State != "unavailable" && s.State != "unknown" {
 				info.Cameras = append(info.Cameras, s)
@@ -180,6 +221,56 @@ func attr(s State, key string) string {
 	}
 	return fmt.Sprint(v)
 }
+func hasDeviceLabel(s State, label string) bool {
+	for _, l := range s.DeviceLabels {
+		if strings.EqualFold(strings.TrimSpace(l), label) {
+			return true
+		}
+	}
+	if raw, ok := s.Attributes["device_labels"]; ok {
+		if list, ok := raw.([]string); ok {
+			for _, l := range list {
+				if strings.EqualFold(strings.TrimSpace(l), label) {
+					return true
+				}
+			}
+		}
+		if list, ok := raw.([]any); ok {
+			for _, item := range list {
+				if strings.EqualFold(strings.TrimSpace(fmt.Sprint(item)), label) {
+					return true
+				}
+			}
+		}
+		if str, ok := raw.(string); ok {
+			if strings.EqualFold(strings.TrimSpace(str), label) {
+				return true
+			}
+		}
+	}
+	if raw, ok := s.Attributes["labels"]; ok {
+		if list, ok := raw.([]string); ok {
+			for _, l := range list {
+				if strings.EqualFold(strings.TrimSpace(l), label) {
+					return true
+				}
+			}
+		}
+		if list, ok := raw.([]any); ok {
+			for _, item := range list {
+				if strings.EqualFold(strings.TrimSpace(fmt.Sprint(item)), label) {
+					return true
+				}
+			}
+		}
+		if str, ok := raw.(string); ok {
+			if strings.EqualFold(strings.TrimSpace(str), label) {
+				return true
+			}
+		}
+	}
+	return false
+}
 func findSensor(sensors []State, kind string) string {
 	for _, s := range sensors {
 		class := strings.ToLower(attr(s, "device_class"))
@@ -188,6 +279,9 @@ func findSensor(sensors []State, kind string) string {
 		match := false
 		switch kind {
 		case "temp":
+			if hasDeviceLabel(s, "Rocket Sheep | Ignore Temperature") {
+				continue
+			}
 			match = class == "temperature" || (strings.Contains(id, "temperature") && (unit == "°c" || unit == "°f" || unit == "c" || unit == "f"))
 		case "humidity":
 			match = class == "humidity" || (strings.Contains(id, "humidity") && unit == "%")
@@ -370,9 +464,13 @@ func (b *Bot) render(ctx context.Context, a AreaInfo) ([]byte, int, int, error) 
 			log.Printf("snapshot %s: %v", s.EntityID, e)
 			drawText(canvas, x+10, y+10, "CAMERA UNAVAILABLE", color.White, 2)
 		} else {
-			// Pixelation (not just JPEG compression): cap underlying detail to a
-			// very small sample grid before any enlargement or annotation.
-			pixelateCover(canvas, image.Rect(x, y, x+tw, y+th), src, b.cfg.PixelsWide)
+			if hasDeviceLabel(s, "Rocket Sheep | Full Resolution") {
+				drawCover(canvas, image.Rect(x, y, x+tw, y+th), src)
+			} else {
+				// Pixelation (not just JPEG compression): cap underlying detail to a
+				// very small sample grid before any enlargement or annotation.
+				pixelateCover(canvas, image.Rect(x, y, x+tw, y+th), src, b.cfg.PixelsWide)
+			}
 			succeeded++
 		}
 		draw.Draw(canvas, image.Rect(x, y+th, x+tw, y+th+caption), &image.Uniform{color.RGBA{0, 0, 0, 255}}, image.Point{}, draw.Src)
@@ -426,6 +524,40 @@ func truncate(s string, n int) string {
 		return string(r[:max(0, n)])
 	}
 	return string(r[:n-3]) + "..."
+}
+
+func drawCover(dst *image.RGBA, rect image.Rectangle, src image.Image) {
+	sb := src.Bounds()
+	sw, sh := sb.Dx(), sb.Dy()
+	if sw == 0 || sh == 0 {
+		return
+	}
+	draw.Draw(dst, rect, &image.Uniform{color.RGBA{0, 0, 0, 255}}, image.Point{}, draw.Src)
+	dw, dh := rect.Dx(), rect.Dy()
+	fitW, fitH := dw, dh
+	if float64(sw)*float64(dh) > float64(dw)*float64(sh) {
+		fitH = max(1, int(math.Round(float64(dw)*float64(sh)/float64(sw))))
+	} else if float64(sw)*float64(dh) < float64(dw)*float64(sh) {
+		fitW = max(1, int(math.Round(float64(dh)*float64(sw)/float64(sh))))
+	}
+	offsetX := (dw - fitW) / 2
+	offsetY := (dh - fitH) / 2
+	fitRect := image.Rect(rect.Min.X+offsetX, rect.Min.Y+offsetY, rect.Min.X+offsetX+fitW, rect.Min.Y+offsetY+fitH)
+
+	for yy := 0; yy < fitH; yy++ {
+		sy := sb.Min.Y + int(float64(yy)*float64(sh)/float64(fitH))
+		if sy >= sb.Max.Y {
+			sy = sb.Max.Y - 1
+		}
+		for xx := 0; xx < fitW; xx++ {
+			sx := sb.Min.X + int(float64(xx)*float64(sw)/float64(fitW))
+			if sx >= sb.Max.X {
+				sx = sb.Max.X - 1
+			}
+			r, g, b, a := src.At(sx, sy).RGBA()
+			dst.SetRGBA(fitRect.Min.X+xx, fitRect.Min.Y+yy, color.RGBA{uint8(r >> 8), uint8(g >> 8), uint8(b >> 8), uint8(a >> 8)})
+		}
+	}
 }
 
 // Nearest-neighbour pixelation. There is no full-resolution

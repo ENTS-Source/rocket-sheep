@@ -3,9 +3,11 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"image"
 	"image/color"
 	"image/jpeg"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -461,5 +463,243 @@ func TestRenderWithSensorsAndPM25Bar(t *testing.T) {
 	}
 	if decoded.Bounds().Dx() != w || decoded.Bounds().Dy() != h {
 		t.Fatalf("decoded dimensions %dx%d mismatch expected %dx%d", decoded.Bounds().Dx(), decoded.Bounds().Dy(), w, h)
+	}
+}
+
+func TestDeviceLabelsFullResolutionCamera(t *testing.T) {
+	// Create an alternating high-frequency black-and-white image (640x360)
+	camImg := image.NewRGBA(image.Rect(0, 0, 640, 360))
+	for y := 0; y < 360; y++ {
+		for x := 0; x < 640; x++ {
+			if x%2 == 0 {
+				camImg.Set(x, y, color.White)
+			} else {
+				camImg.Set(x, y, color.Black)
+			}
+		}
+	}
+	var camBuf bytes.Buffer
+	if err := jpeg.Encode(&camBuf, camImg, &jpeg.Options{Quality: 100}); err != nil {
+		t.Fatal(err)
+	}
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/jpeg")
+		w.Write(camBuf.Bytes())
+	}))
+	defer ts.Close()
+
+	bot := &Bot{
+		cfg: Config{
+			HAURL:       ts.URL,
+			HAToken:     "mock_token",
+			TileWidth:   640,
+			TileHeight:  360,
+			PixelsWide:  48,
+			JPEGQuality: 100,
+			MaxCameras:  12,
+		},
+		http: ts.Client(),
+	}
+
+	// Area with 2 cameras:
+	// camera.full has the "Rocket Sheep | Full Resolution" label
+	// camera.pixelated does not have the label
+	area := AreaInfo{
+		Name: "Test Area",
+		Cameras: []State{
+			{
+				EntityID:     "camera.full",
+				DeviceLabels: []string{"Rocket Sheep | Full Resolution"},
+				Attributes:   map[string]any{"friendly_name": "Full Res Camera"},
+			},
+			{
+				EntityID:   "camera.pixelated",
+				Attributes: map[string]any{"friendly_name": "Pixelated Camera"},
+			},
+		},
+	}
+
+	jpgBytes, _, _, err := bot.render(context.Background(), area)
+	if err != nil {
+		t.Fatalf("render failed: %v", err)
+	}
+
+	decoded, err := jpeg.Decode(bytes.NewReader(jpgBytes))
+	if err != nil {
+		t.Fatalf("failed to decode rendered jpeg: %v", err)
+	}
+
+	// For 2 cameras: cols=2, rows=1.
+	// Camera 1 is at x in [gap .. gap+tw], Camera 2 is at x in [gap+tw+gap .. gap+2*tw+gap]
+	// With JPEGQuality=100:
+	// For camera.full (full resolution): adjacent pixels in the alternating pattern (e.g. x=gap+20 and x=gap+21)
+	// will have significantly different luminosities (near 255 and near 0).
+	// For camera.pixelated: adjacent pixels within the coarse pixel block (48 pixels wide on 640 width = ~13 px block)
+	// will be averaged to near-identical gray values.
+
+	gap := 4
+	yCheck := gap + 100
+	cFull0 := decoded.At(gap+20, yCheck)
+	cFull1 := decoded.At(gap+21, yCheck)
+	r0, _, _, _ := cFull0.RGBA()
+	r1, _, _, _ := cFull1.RGBA()
+	diffFull := math.Abs(float64(r0>>8) - float64(r1>>8))
+	if diffFull < 100 {
+		t.Fatalf("expected high difference between adjacent pixels in full resolution camera, got diff=%f (%v vs %v)", diffFull, cFull0, cFull1)
+	}
+
+	cPix0 := decoded.At(gap+640+gap+20, yCheck)
+	cPix1 := decoded.At(gap+640+gap+21, yCheck)
+	rPix0, _, _, _ := cPix0.RGBA()
+	rPix1, _, _, _ := cPix1.RGBA()
+	diffPix := math.Abs(float64(rPix0>>8) - float64(rPix1>>8))
+	if diffPix > 30 {
+		t.Fatalf("expected adjacent pixels in pixelated camera to be very similar (averaged), got diff=%f (%v vs %v)", diffPix, cPix0, cPix1)
+	}
+}
+
+func TestDeviceLabelsIgnoreTemperatureSensor(t *testing.T) {
+	// Case 1: First temp sensor has "Rocket Sheep | Ignore Temperature", second temp sensor is normal.
+	sensors := []State{
+		{
+			EntityID:     "sensor.ignored_temp",
+			State:        "18.5",
+			DeviceLabels: []string{"Rocket Sheep | Ignore Temperature"},
+			Attributes:   map[string]any{"device_class": "temperature", "unit_of_measurement": "°C"},
+		},
+		{
+			EntityID:   "sensor.valid_temp",
+			State:      "22.3",
+			Attributes: map[string]any{"device_class": "temperature", "unit_of_measurement": "°C"},
+		},
+		{
+			EntityID:     "sensor.device_humidity",
+			State:        "45",
+			DeviceLabels: []string{"Rocket Sheep | Ignore Temperature"},
+			Attributes:   map[string]any{"device_class": "humidity", "unit_of_measurement": "%"},
+		},
+	}
+
+	gotTemp := findSensor(sensors, "temp")
+	if gotTemp != "TEMP 22.3°C" {
+		t.Fatalf("expected 'TEMP 22.3°C', got %q", gotTemp)
+	}
+
+	gotHum := findSensor(sensors, "humidity")
+	if gotHum != "HUMIDITY 45%" {
+		t.Fatalf("expected humidity to not be ignored, got %q", gotHum)
+	}
+
+	// Case 2: Only one temp sensor and it is ignored.
+	onlyIgnored := []State{
+		{
+			EntityID:     "sensor.ignored_temp",
+			State:        "18.5",
+			DeviceLabels: []string{"Rocket Sheep | Ignore Temperature"},
+			Attributes:   map[string]any{"device_class": "temperature", "unit_of_measurement": "°C"},
+		},
+	}
+	gotNoTemp := findSensor(onlyIgnored, "temp")
+	if gotNoTemp != "" {
+		t.Fatalf("expected empty string when only temp sensor is ignored, got %q", gotNoTemp)
+	}
+
+	// Case 3: Attribute fallback (device_labels / labels in Attributes)
+	attrIgnored := []State{
+		{
+			EntityID:   "sensor.ignored_attr_temp",
+			State:      "19.0",
+			Attributes: map[string]any{"device_class": "temperature", "unit_of_measurement": "°C", "device_labels": []string{"rocket sheep | ignore temperature"}},
+		},
+	}
+	if got := findSensor(attrIgnored, "temp"); got != "" {
+		t.Fatalf("expected case-insensitive device_labels in attributes to be ignored, got %q", got)
+	}
+}
+
+func TestDiscoverWithDeviceLabelsTemplate(t *testing.T) {
+	areasTemplateResp := `[
+		{
+			"name": "Living Room",
+			"entities": [
+				{"id": "camera.living_room", "labels": ["Rocket Sheep | Full Resolution"]},
+				{"id": "sensor.living_room_temp", "labels": ["Rocket Sheep | Ignore Temperature"]},
+				{"id": "sensor.living_room_temp2", "labels": []}
+			]
+		}
+	]`
+
+	statesResp := `[
+		{"entity_id": "camera.living_room", "state": "idle", "attributes": {"friendly_name": "Living Room Cam"}},
+		{"entity_id": "sensor.living_room_temp", "state": "20.5", "attributes": {"device_class": "temperature", "unit_of_measurement": "°C"}},
+		{"entity_id": "sensor.living_room_temp2", "state": "21.5", "attributes": {"device_class": "temperature", "unit_of_measurement": "°C"}}
+	]`
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/template":
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(areasTemplateResp))
+		case "/api/states":
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(statesResp))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer ts.Close()
+
+	bot := &Bot{
+		cfg: Config{
+			HAURL:   ts.URL,
+			HAToken: "mock_token",
+		},
+		http: ts.Client(),
+	}
+
+	areas, err := bot.discover(context.Background())
+	if err != nil {
+		t.Fatalf("discover failed: %v", err)
+	}
+	if len(areas) != 1 {
+		t.Fatalf("expected 1 area, got %d", len(areas))
+	}
+	if len(areas[0].Cameras) != 1 {
+		t.Fatalf("expected 1 camera, got %d", len(areas[0].Cameras))
+	}
+	cam := areas[0].Cameras[0]
+	if !hasDeviceLabel(cam, "Rocket Sheep | Full Resolution") {
+		t.Fatalf("expected camera to have 'Rocket Sheep | Full Resolution' label, got %v", cam.DeviceLabels)
+	}
+
+	tempStr := findSensor(areas[0].Sensors, "temp")
+	if tempStr != "TEMP 21.5°C" {
+		t.Fatalf("expected discover sensors to ignore first temp and choose second, got %q", tempStr)
+	}
+}
+
+func TestAreaEntityUnmarshal(t *testing.T) {
+	// String format
+	jsonStr := `["camera.one", "sensor.one"]`
+	var ents1 []AreaEntity
+	if err := json.Unmarshal([]byte(jsonStr), &ents1); err != nil {
+		t.Fatalf("failed to unmarshal string list: %v", err)
+	}
+	if len(ents1) != 2 || ents1[0].EntityID != "camera.one" || ents1[1].EntityID != "sensor.one" {
+		t.Fatalf("unexpected unmarshal result for strings: %+v", ents1)
+	}
+
+	// Object format with labels
+	jsonObj := `[{"id": "camera.two", "labels": ["Rocket Sheep | Full Resolution"]}, {"entity_id": "sensor.two", "device_labels": ["Rocket Sheep | Ignore Temperature"]}]`
+	var ents2 []AreaEntity
+	if err := json.Unmarshal([]byte(jsonObj), &ents2); err != nil {
+		t.Fatalf("failed to unmarshal object list: %v", err)
+	}
+	if len(ents2) != 2 || ents2[0].EntityID != "camera.two" || len(ents2[0].DeviceLabels) != 1 || ents2[0].DeviceLabels[0] != "Rocket Sheep | Full Resolution" {
+		t.Fatalf("unexpected unmarshal result for objects: %+v", ents2)
+	}
+	if ents2[1].EntityID != "sensor.two" || len(ents2[1].DeviceLabels) != 1 || ents2[1].DeviceLabels[0] != "Rocket Sheep | Ignore Temperature" {
+		t.Fatalf("unexpected unmarshal result for second object: %+v", ents2[1])
 	}
 }
