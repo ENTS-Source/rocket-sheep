@@ -709,7 +709,11 @@ func (b *Bot) handle(ctx context.Context, room, sender, body string) {
 		}
 		var lines []string
 		for _, a := range areas {
-			lines = append(lines, fmt.Sprintf("%s (%d camera(s))", a.Name, len(a.Cameras)))
+			plural := ""
+			if len(a.Cameras) > 1 {
+				plural = "s"
+			}
+			lines = append(lines, fmt.Sprintf("%s (%d camera%s)", a.Name, len(a.Cameras), plural))
 		}
 		_ = b.text(ctx, room, "Camera areas:\n"+strings.Join(lines, "\n"))
 	case "show":
